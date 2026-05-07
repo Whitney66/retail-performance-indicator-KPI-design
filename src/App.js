@@ -7,9 +7,9 @@ import {
   storeOptions,
   metricHeaders,
 } from './data/report-config.js';
-import { fixedOfflineRows, detailOfflineRows } from './data/offline-retail.js';
+import { offlineRetailRows } from './data/offline-retail.js';
 
-const stickyLeftOffsets = ['0px', '148px', '296px', '404px'];
+const stickyLeftOffsets = ['0px', '180px', '300px'];
 
 const modulePlaceholders = {
   monthly: {
@@ -298,7 +298,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   const thead = document.createElement('thead');
   const groupRow = document.createElement('tr');
 
-  ['渠道', '二级渠道', '类别', '指标'].forEach((name, index) => {
+  ['渠道', '类别', '指标'].forEach((name, index) => {
     const th = createCell('th', 'sticky-col-head', name);
     th.rowSpan = 2;
     applyStickyOffset(th, index);
@@ -319,12 +319,21 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   thead.append(groupRow, metricRow);
 
   const tbody = document.createElement('tbody');
-  rows.forEach((row) => {
+  rows.forEach((row, rowIndex) => {
     const tr = document.createElement('tr');
-    if (row.summary) tr.classList.add('summary-row');
-    [row.channel, row.secondaryChannel, row.category, row.indicator, ...row.metrics].forEach((cell, index) => {
+    const previousRow = rows[rowIndex - 1];
+    const channelRowSpan = rows.filter((item) => item.channel === row.channel).length;
+
+    if (!previousRow || previousRow.channel !== row.channel) {
+      const channelCell = createCell('td', 'channel-merged-cell', row.channel);
+      channelCell.rowSpan = channelRowSpan;
+      applyStickyOffset(channelCell, 0);
+      tr.appendChild(channelCell);
+    }
+
+    [row.category, row.indicator, ...row.metrics].forEach((cell, index) => {
       const td = createCell('td', '', cell);
-      applyStickyOffset(td, index);
+      applyStickyOffset(td, index + 1);
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -372,9 +381,8 @@ function renderPlaceholderTab(config) {
 
 function buildOfflineTab() {
   const wrapper = createCell('div', 'tab-pane');
-  wrapper.append(
-    renderReportTable(fixedOfflineRows, '固定指标口径', '用于展示线下零售基础统计及预算对比字段', '单位：亿元 / 万人次 / %', '', { hideTitle: true }),
-    renderReportTable(detailOfflineRows, '门店明细指标', '按门店展开展示横向预算、同比及剩余预算字段', '单位：亿元 / 万人次 / %', 'detail-table', { hideTitle: true }),
+  wrapper.appendChild(
+    renderReportTable(offlineRetailRows, '线下零售', '固定展示字段', '单位：亿元 / 万人次 / %', '', { hideTitle: true }),
   );
   return wrapper;
 }
