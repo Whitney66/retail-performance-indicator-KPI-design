@@ -282,12 +282,16 @@ function createTableToolbar(unitText) {
   return toolbar;
 }
 
-function renderReportTable(rows, title, subtitle, unitText, tableClassName = '') {
+function renderReportTable(rows, title, subtitle, unitText, tableClassName = '', options = {}) {
   const tableWrap = createCell('div', 'table-card');
   const head = createCell('div', 'section-head');
-  const titleGroup = createCell('div', 'section-title-group');
-  titleGroup.append(createCell('div', 'section-title', title), createCell('div', 'section-subtitle', subtitle));
-  head.append(titleGroup, createTableToolbar(unitText));
+  if (options.hideTitle) {
+    head.classList.add('compact');
+  } else {
+    const titleGroup = createCell('div', 'section-title-group');
+    titleGroup.append(createCell('div', 'section-title', title), createCell('div', 'section-subtitle', subtitle));
+    head.append(titleGroup, createTableToolbar(unitText));
+  }
 
   const scroll = createCell('div', 'table-scroll');
   const table = createCell('table', `report-table ${tableClassName}`.trim());
@@ -368,27 +372,9 @@ function renderPlaceholderTab(config) {
 
 function buildOfflineTab() {
   const wrapper = createCell('div', 'tab-pane');
-  const banner = createCell('div', 'insight-banner');
-  banner.append(
-    createCell('div', 'insight-title', '线下零售经营驾驶舱'),
-    createCell('div', 'insight-text', '聚焦预算进度、收入质量、客流转化和门店经营表现，支持按时间、渠道与门店快速查看。'),
-  );
-
-  const stats = createCell('div', 'overview-grid');
-  [
-    ['预算完成率', '84.6%', '较上月 +3.1%'],
-    ['累计实际', '268.42', '单位：亿元'],
-    ['剩余预算', '48.75', 'Year-To-Go'],
-    ['主要门店表现', '6 家', '核心样板门店'],
-  ].forEach(([label, value, note]) => {
-    stats.appendChild(createMetricCard(label, value, note));
-  });
-
   wrapper.append(
-    banner,
-    stats,
-    renderReportTable(fixedOfflineRows, '固定指标口径', '用于展示线下零售基础统计及预算对比字段', '单位：亿元 / 万人次 / %'),
-    renderReportTable(detailOfflineRows, '门店明细指标', '按门店展开展示横向预算、同比及剩余预算字段', '单位：亿元 / 万人次 / %', 'detail-table'),
+    renderReportTable(fixedOfflineRows, '固定指标口径', '用于展示线下零售基础统计及预算对比字段', '单位：亿元 / 万人次 / %', '', { hideTitle: true }),
+    renderReportTable(detailOfflineRows, '门店明细指标', '按门店展开展示横向预算、同比及剩余预算字段', '单位：亿元 / 万人次 / %', 'detail-table', { hideTitle: true }),
   );
   return wrapper;
 }
@@ -429,20 +415,10 @@ export function renderApp(root) {
   const reportCard = createCell('section', 'report-card');
   const titleRow = createCell('div', 'report-title-row');
   const titleGroup = createCell('div', 'report-heading');
-  titleGroup.append(
-    createCell('h1', 'report-title', '零售运营数据指标模型'),
-    createCell('p', 'report-subtitle', `数据更新时间：${formatUpdateTime()}`),
-  );
+  titleGroup.appendChild(createCell('p', 'report-subtitle', `数据更新时间：${formatUpdateTime()}`));
   titleRow.append(titleGroup, createCell('button', 'outline-btn', '需求说明'));
 
   const filterPanel = createCell('section', 'filter-panel');
-  const filterHead = createCell('div', 'filter-panel-head');
-  const filterTitle = createCell('div', 'filter-panel-title', '查询条件');
-  const filterSummary = createCell('div', 'filter-panel-summary');
-  const collapseBtn = createCell('button', 'filter-collapse-btn', '收起');
-  collapseBtn.type = 'button';
-  filterHead.append(filterTitle, filterSummary, collapseBtn);
-
   const filterBody = createCell('div', 'filter-panel-body');
   const filterBar = createCell('div', 'filter-bar');
   const { field: dimensionField, select: dimensionSelect } = createSingleSelect('时间维度', timeDimensions, 'month');
@@ -465,18 +441,7 @@ export function renderApp(root) {
     updateFilterSummary();
   }
 
-  function updateFilterSummary(message = '') {
-    const dimensionLabel = timeDimensions.find((item) => item.value === dimensionSelect.value)?.label || '月';
-    const summary = [
-      `时间维度：${dimensionLabel}`,
-      `开始：${startInput.value}`,
-      `结束：${endInput.value}`,
-      `渠道：${channelMulti.getSummary()}`,
-      `二级渠道：${secondaryChannelMulti.getSummary()}`,
-      `门店：${storeMulti.getSummary()}`,
-    ].join('；');
-    filterSummary.textContent = message ? `${message}｜${summary}` : summary;
-  }
+  function updateFilterSummary() {}
 
   dimensionSelect.addEventListener('change', syncDateInputs);
   startInput.addEventListener('change', () => updateFilterSummary());
@@ -485,31 +450,21 @@ export function renderApp(root) {
     control.field.addEventListener('multi-select-change', () => updateFilterSummary());
   });
 
-  filterBar.append(dimensionField, startField, endField, channelMulti.field, secondaryChannelMulti.field, storeMulti.field);
-
   const filterActions = createCell('div', 'filter-actions');
   const queryBtn = createCell('button', 'primary-btn', '查询');
   const resetBtn = createCell('button', 'ghost-btn', '重置');
   queryBtn.type = 'button';
   resetBtn.type = 'button';
-  queryBtn.addEventListener('click', () => updateFilterSummary('已按当前条件刷新'));
+  queryBtn.addEventListener('click', () => multiControls.forEach((control) => control.close()));
   resetBtn.addEventListener('click', () => {
     dimensionSelect.value = 'month';
     multiControls.forEach((control) => control.reset());
     syncDateInputs();
-    updateFilterSummary('已恢复默认条件');
   });
   filterActions.append(queryBtn, resetBtn);
-  filterBody.append(filterBar, filterActions);
-  filterPanel.append(filterHead, filterBody);
-
-  let filterCollapsed = false;
-  collapseBtn.addEventListener('click', () => {
-    filterCollapsed = !filterCollapsed;
-    filterPanel.classList.toggle('collapsed', filterCollapsed);
-    collapseBtn.textContent = filterCollapsed ? '展开' : '收起';
-    multiControls.forEach((control) => control.close());
-  });
+  filterBar.append(dimensionField, startField, endField, channelMulti.field, secondaryChannelMulti.field, storeMulti.field, filterActions);
+  filterBody.appendChild(filterBar);
+  filterPanel.appendChild(filterBody);
 
   const tabBar = createCell('div', 'tab-bar');
   const tabContent = createCell('div', 'tab-content');

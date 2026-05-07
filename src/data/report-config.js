@@ -45,12 +45,12 @@ export const secondaryChannelOptions = [
 
 export const storeOptions = [
   '全部',
-  '三亚店',
-  '新海港店',
-  '凤凰机场店',
-  '美兰机场店',
-  '博鳌店',
-  '日月店',
+  '[1001] 三亚店',
+  '[1002] 新海港店',
+  '[1003] 凤凰机场店',
+  '[1004] 美兰机场店',
+  '[1005] 博鳌店',
+  '[1006] 日月店',
 ];
 
 export const metricHeaders = [
