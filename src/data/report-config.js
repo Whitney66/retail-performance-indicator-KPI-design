@@ -19,6 +19,7 @@ export const reportTabs = [
 ];
 
 export const timeDimensions = [
+  { value: 'year', label: '年' },
   { value: 'month', label: '月' },
   { value: 'day', label: '日' },
 ];

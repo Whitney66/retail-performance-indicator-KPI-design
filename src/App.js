@@ -9,7 +9,7 @@ import {
 } from './data/report-config.js';
 import { offlineRetailRows } from './data/offline-retail.js';
 
-const stickyLeftOffsets = ['0px', '180px', '300px'];
+const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
 const modulePlaceholders = {
   monthly: {
@@ -65,12 +65,25 @@ function getRangeByDimension(dimension) {
   const day = `${now.getDate()}`.padStart(2, '0');
 
   if (dimension === 'year') {
-    return { start: `${year}-01`, end: `${year}-12` };
+    return { start: `${year}`, end: `${year}` };
   }
   if (dimension === 'month') {
     return { start: `${year}-${month}`, end: `${year}-${month}` };
   }
   return { start: `${year}-${month}-${day}`, end: `${year}-${month}-${day}` };
+}
+
+function formatBudgetPeriod(dimension, startValue, endValue) {
+  if (!startValue || !endValue) return '本期预算';
+
+  function formatValue(value) {
+    if (dimension === 'year') return `${Number(value)}年`;
+    const [, month, day] = value.split('-');
+    if (dimension === 'day') return `${Number(month)}月${Number(day)}日`;
+    return `${Number(month)}月`;
+  }
+
+  return `本期预算（${formatValue(startValue)}–${formatValue(endValue)}）`;
 }
 
 function formatUpdateTime() {
@@ -298,7 +311,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   const thead = document.createElement('thead');
   const groupRow = document.createElement('tr');
 
-  ['渠道', '类别', '指标'].forEach((name, index) => {
+  ['渠道', '二级渠道', '门店', '类别', '指标'].forEach((name, index) => {
     const th = createCell('th', 'sticky-col-head', name);
     th.rowSpan = 2;
     applyStickyOffset(th, index);
@@ -312,7 +325,9 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   groupRow.append(budgetGroup, compareGroup);
 
   const metricRow = document.createElement('tr');
-  metricHeaders.forEach((name, index) => {
+  const dynamicMetricHeaders = [...metricHeaders];
+  if (options.budgetHeader) dynamicMetricHeaders[0] = options.budgetHeader;
+  dynamicMetricHeaders.forEach((name, index) => {
     const th = createCell('th', index < 6 ? 'budget-head' : 'compare-head', name);
     metricRow.appendChild(th);
   });
@@ -321,19 +336,28 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   const tbody = document.createElement('tbody');
   rows.forEach((row, rowIndex) => {
     const tr = document.createElement('tr');
-    const previousRow = rows[rowIndex - 1];
-    const channelRowSpan = rows.filter((item) => item.channel === row.channel).length;
+    const mergeColumns = [
+      { key: 'channel', className: 'channel-merged-cell' },
+      { key: 'secondaryChannel', className: 'dimension-merged-cell' },
+      { key: 'store', className: 'dimension-merged-cell' },
+      { key: 'category', className: 'category-merged-cell' },
+    ];
 
-    if (!previousRow || previousRow.channel !== row.channel) {
-      const channelCell = createCell('td', 'channel-merged-cell', row.channel);
-      channelCell.rowSpan = channelRowSpan;
-      applyStickyOffset(channelCell, 0);
-      tr.appendChild(channelCell);
-    }
+    mergeColumns.forEach(({ key, className }, index) => {
+      const previousRow = rows[rowIndex - 1];
+      const shouldMerge = previousRow && mergeColumns.slice(0, index + 1).every((column) => previousRow[column.key] === row[column.key]);
+      if (shouldMerge) return;
 
-    [row.category, row.indicator, ...row.metrics].forEach((cell, index) => {
+      const rowSpan = rows.filter((item) => mergeColumns.slice(0, index + 1).every((column) => item[column.key] === row[column.key])).length;
+      const td = createCell('td', className, row[key]);
+      td.rowSpan = rowSpan;
+      applyStickyOffset(td, index);
+      tr.appendChild(td);
+    });
+
+    [row.indicator, ...row.metrics].forEach((cell, index) => {
       const td = createCell('td', '', cell);
-      applyStickyOffset(td, index + 1);
+      applyStickyOffset(td, index + 4);
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -379,10 +403,10 @@ function renderPlaceholderTab(config) {
   return section;
 }
 
-function buildOfflineTab() {
+function buildOfflineTab(budgetHeader) {
   const wrapper = createCell('div', 'tab-pane');
   wrapper.appendChild(
-    renderReportTable(offlineRetailRows, '线下零售', '固定展示字段', '单位：亿元 / 万人次 / %', '', { hideTitle: true }),
+    renderReportTable(offlineRetailRows, '线下零售', '固定展示字段', '单位：亿元 / 万人次 / %', '', { hideTitle: true, budgetHeader }),
   );
   return wrapper;
 }
@@ -441,15 +465,38 @@ export function renderApp(root) {
   function syncDateInputs() {
     const dimension = dimensionSelect.value;
     const range = getRangeByDimension(dimension);
-    const type = dimension === 'day' ? 'date' : 'month';
+    const typeByDimension = {
+      year: 'number',
+      month: 'month',
+      day: 'date',
+    };
+    const type = typeByDimension[dimension] || 'month';
     startInput.type = type;
     endInput.type = type;
+    startInput.min = dimension === 'year' ? '2000' : '';
+    endInput.min = dimension === 'year' ? '2000' : '';
+    startInput.max = dimension === 'year' ? '2099' : '';
+    endInput.max = dimension === 'year' ? '2099' : '';
+    startInput.step = dimension === 'year' ? '1' : '';
+    endInput.step = dimension === 'year' ? '1' : '';
     startInput.value = range.start;
     endInput.value = range.end;
     updateFilterSummary();
   }
 
-  function updateFilterSummary() {}
+  function getBudgetHeader() {
+    return formatBudgetPeriod(dimensionSelect.value, startInput.value, endInput.value);
+  }
+
+  function refreshCurrentTab() {
+    const activeTab = [...tabBar.children].find((node) => node.classList.contains('active'));
+    const activeTabConfig = reportTabs[[...tabBar.children].indexOf(activeTab)];
+    mountTab(activeTabConfig?.id || 'offline');
+  }
+
+  function updateFilterSummary() {
+    refreshCurrentTab();
+  }
 
   dimensionSelect.addEventListener('change', syncDateInputs);
   startInput.addEventListener('change', () => updateFilterSummary());
@@ -463,7 +510,10 @@ export function renderApp(root) {
   const resetBtn = createCell('button', 'ghost-btn', '重置');
   queryBtn.type = 'button';
   resetBtn.type = 'button';
-  queryBtn.addEventListener('click', () => multiControls.forEach((control) => control.close()));
+  queryBtn.addEventListener('click', () => {
+    multiControls.forEach((control) => control.close());
+    refreshCurrentTab();
+  });
   resetBtn.addEventListener('click', () => {
     dimensionSelect.value = 'month';
     multiControls.forEach((control) => control.reset());
@@ -480,7 +530,7 @@ export function renderApp(root) {
   function mountTab(id) {
     tabContent.innerHTML = '';
     if (id === 'offline') {
-      tabContent.appendChild(buildOfflineTab());
+      tabContent.appendChild(buildOfflineTab(getBudgetHeader()));
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));
