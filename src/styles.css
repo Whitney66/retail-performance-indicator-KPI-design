@@ -604,6 +604,23 @@ button {
   background: var(--green-soft);
 }
 
+.metric-group.detail-group,
+.detail-head {
+  background: var(--purple-soft);
+}
+
+.detail-budget-head {
+  color: #7a5100;
+}
+
+.detail-same-head {
+  color: #275a3a;
+}
+
+.detail-yoy-head {
+  color: #613a94;
+}
+
 .report-table td:first-child,
 .report-table th:first-child {
   min-width: 160px;

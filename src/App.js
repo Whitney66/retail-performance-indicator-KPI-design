@@ -86,6 +86,84 @@ function formatBudgetPeriod(dimension, startValue, endValue) {
   return `本期预算（${formatValue(startValue)}–${formatValue(endValue)}）`;
 }
 
+function formatMonthLabel(year, month) {
+  return `${year}年${month}月`;
+}
+
+function formatDayLabel(year, month, day) {
+  return `${year}年${month}月${day}日`;
+}
+
+function createDetailColumnsForPeriod(label, previousLabel, periodIndex) {
+  return [
+    { label: `${label}预算`, type: 'budget', periodIndex },
+    { label: `${previousLabel}同期`, type: 'same', periodIndex },
+    { label: `${label}同比`, type: 'yoy', periodIndex },
+  ];
+}
+
+function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
+  if (!startValue || !endValue) return [];
+
+  if (dimension === 'year') {
+    const startYear = Number(startValue);
+    const endYear = Number(endValue);
+    if (!Number.isFinite(startYear) || !Number.isFinite(endYear) || startYear > endYear) return [];
+
+    return Array.from({ length: endYear - startYear + 1 }, (_, index) => {
+      const year = startYear + index;
+      return createDetailColumnsForPeriod(`${year}年`, `${year - 1}年`, index);
+    }).flat();
+  }
+
+  if (dimension === 'month') {
+    const [startYear, startMonth] = startValue.split('-').map(Number);
+    const [endYear, endMonth] = endValue.split('-').map(Number);
+    if (![startYear, startMonth, endYear, endMonth].every(Number.isFinite)) return [];
+
+    const startIndex = startYear * 12 + startMonth;
+    const endIndex = endYear * 12 + endMonth;
+    if (startIndex > endIndex) return [];
+
+    return Array.from({ length: endIndex - startIndex + 1 }, (_, index) => {
+      const monthIndex = startIndex + index;
+      const year = Math.floor((monthIndex - 1) / 12);
+      const month = ((monthIndex - 1) % 12) + 1;
+      return createDetailColumnsForPeriod(formatMonthLabel(year, month), formatMonthLabel(year - 1, month), index);
+    }).flat();
+  }
+
+  const [startYear, startMonth, startDay] = startValue.split('-').map(Number);
+  const [endYear, endMonth, endDay] = endValue.split('-').map(Number);
+  if (![startYear, startMonth, startDay, endYear, endMonth, endDay].every(Number.isFinite)) return [];
+
+  const startDate = Date.UTC(startYear, startMonth - 1, startDay);
+  const endDate = Date.UTC(endYear, endMonth - 1, endDay);
+  if (startDate > endDate) return [];
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  return Array.from({ length: Math.floor((endDate - startDate) / dayMs) + 1 }, (_, index) => {
+    const date = new Date(startDate + index * dayMs);
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth() + 1;
+    const day = date.getUTCDate();
+    return createDetailColumnsForPeriod(formatDayLabel(year, month, day), formatDayLabel(year - 1, month, day), index);
+  }).flat();
+}
+
+function formatDetailMetricCell(rowIndex, column, columnIndex) {
+  const base = 34 + rowIndex * 5 + column.periodIndex * 4 + columnIndex;
+  if (column.type === 'yoy') return `${((base % 32) - 6).toFixed(1)}%`;
+  if (column.type === 'same') return `${((base + 12) / 12).toFixed(2)}`;
+  return `${((base + 18) / 11).toFixed(2)}`;
+}
+
+function getDetailHeadClass(type) {
+  if (type === 'budget') return 'detail-head detail-budget-head';
+  if (type === 'same') return 'detail-head detail-same-head';
+  return 'detail-head detail-yoy-head';
+}
+
 function formatUpdateTime() {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
@@ -318,11 +396,17 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
     groupRow.appendChild(th);
   });
 
+  const detailColumns = options.detailColumns || [];
   const budgetGroup = createCell('th', 'metric-group budget-group', '预算进度');
   budgetGroup.colSpan = 6;
   const compareGroup = createCell('th', 'metric-group compare-group', '同比分析');
   compareGroup.colSpan = 4;
   groupRow.append(budgetGroup, compareGroup);
+  if (detailColumns.length) {
+    const detailGroup = createCell('th', 'metric-group detail-group', '所选时间范围明细');
+    detailGroup.colSpan = detailColumns.length;
+    groupRow.appendChild(detailGroup);
+  }
 
   const metricRow = document.createElement('tr');
   const dynamicMetricHeaders = [...metricHeaders];
@@ -330,6 +414,9 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   dynamicMetricHeaders.forEach((name, index) => {
     const th = createCell('th', index < 6 ? 'budget-head' : 'compare-head', name);
     metricRow.appendChild(th);
+  });
+  detailColumns.forEach((column) => {
+    metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
   });
   thead.append(groupRow, metricRow);
 
@@ -355,7 +442,8 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
       tr.appendChild(td);
     });
 
-    [row.indicator, ...row.metrics].forEach((cell, index) => {
+    const detailCells = detailColumns.map((column, columnIndex) => formatDetailMetricCell(rowIndex, column, columnIndex));
+    [row.indicator, ...row.metrics, ...detailCells].forEach((cell, index) => {
       const td = createCell('td', '', cell);
       applyStickyOffset(td, index + 4);
       tr.appendChild(td);
@@ -403,10 +491,14 @@ function renderPlaceholderTab(config) {
   return section;
 }
 
-function buildOfflineTab(budgetHeader) {
+function buildOfflineTab(budgetHeader, detailColumns) {
   const wrapper = createCell('div', 'tab-pane');
   wrapper.appendChild(
-    renderReportTable(offlineRetailRows, '线下零售', '固定展示字段', '单位：亿元 / 万人次 / %', '', { hideTitle: true, budgetHeader }),
+    renderReportTable(offlineRetailRows, '线下零售', '固定展示字段', '单位：亿元 / 万人次 / %', '', {
+      hideTitle: true,
+      budgetHeader,
+      detailColumns,
+    }),
   );
   return wrapper;
 }
@@ -488,6 +580,10 @@ export function renderApp(root) {
     return formatBudgetPeriod(dimensionSelect.value, startInput.value, endInput.value);
   }
 
+  function getDetailColumns() {
+    return buildTimeRangeDetailColumns(dimensionSelect.value, startInput.value, endInput.value);
+  }
+
   function refreshCurrentTab() {
     const activeTab = [...tabBar.children].find((node) => node.classList.contains('active'));
     const activeTabConfig = reportTabs[[...tabBar.children].indexOf(activeTab)];
@@ -530,7 +626,7 @@ export function renderApp(root) {
   function mountTab(id) {
     tabContent.innerHTML = '';
     if (id === 'offline') {
-      tabContent.appendChild(buildOfflineTab(getBudgetHeader()));
+      tabContent.appendChild(buildOfflineTab(getBudgetHeader(), getDetailColumns()));
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));
