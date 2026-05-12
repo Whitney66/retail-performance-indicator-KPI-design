@@ -96,10 +96,19 @@ function formatDayLabel(year, month, day) {
 
 function createDetailColumnsForPeriod(label, previousLabel, periodIndex) {
   return [
-    { label: `${label}预算`, type: 'budget', periodIndex },
-    { label: `${previousLabel}同期`, type: 'same', periodIndex },
-    { label: `${label}同比`, type: 'yoy', periodIndex },
+    { groupLabel: label, label: '预算', type: 'budget', periodIndex },
+    { groupLabel: label, label: `${previousLabel}同期`, type: 'same', periodIndex },
+    { groupLabel: label, label: '同比', type: 'yoy', periodIndex },
   ];
+}
+
+function getDetailGroupTitle(dimension) {
+  const dimensionNames = {
+    year: '按年',
+    month: '按月',
+    day: '按日',
+  };
+  return `日期（${dimensionNames[dimension] || '按月'}）`;
 }
 
 function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
@@ -113,7 +122,7 @@ function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
     return Array.from({ length: endYear - startYear + 1 }, (_, index) => {
       const year = startYear + index;
       return createDetailColumnsForPeriod(`${year}年`, `${year - 1}年`, index);
-    }).flat();
+    });
   }
 
   if (dimension === 'month') {
@@ -130,7 +139,7 @@ function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
       const year = Math.floor((monthIndex - 1) / 12);
       const month = ((monthIndex - 1) % 12) + 1;
       return createDetailColumnsForPeriod(formatMonthLabel(year, month), formatMonthLabel(year - 1, month), index);
-    }).flat();
+    });
   }
 
   const [startYear, startMonth, startDay] = startValue.split('-').map(Number);
@@ -148,7 +157,7 @@ function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
     const month = date.getUTCMonth() + 1;
     const day = date.getUTCDate();
     return createDetailColumnsForPeriod(formatDayLabel(year, month, day), formatDayLabel(year - 1, month, day), index);
-  }).flat();
+  });
 }
 
 function formatDetailMetricCell(rowIndex, column, columnIndex) {
@@ -391,22 +400,35 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
 
   ['渠道', '二级渠道', '门店', '类别', '指标'].forEach((name, index) => {
     const th = createCell('th', 'sticky-col-head', name);
-    th.rowSpan = 2;
+    th.rowSpan = 3;
     applyStickyOffset(th, index);
     groupRow.appendChild(th);
   });
 
-  const detailColumns = options.detailColumns || [];
+  const detailPeriods = options.detailPeriods || [];
+  const detailColumns = detailPeriods.flat();
   const budgetGroup = createCell('th', 'metric-group budget-group', '预算进度');
   budgetGroup.colSpan = 6;
   const compareGroup = createCell('th', 'metric-group compare-group', '同比分析');
   compareGroup.colSpan = 4;
   groupRow.append(budgetGroup, compareGroup);
-  if (detailColumns.length) {
-    const detailGroup = createCell('th', 'metric-group detail-group', '所选时间范围明细');
+  if (detailPeriods.length) {
+    const detailGroup = createCell('th', 'metric-group detail-group', getDetailGroupTitle(options.dimension));
     detailGroup.colSpan = detailColumns.length;
     groupRow.appendChild(detailGroup);
   }
+
+  const periodRow = document.createElement('tr');
+  ['预算进度', '同比分析'].forEach((name, index) => {
+    const th = createCell('th', index === 0 ? 'budget-head' : 'compare-head', name);
+    th.colSpan = index === 0 ? 6 : 4;
+    periodRow.appendChild(th);
+  });
+  detailPeriods.forEach((periodColumns) => {
+    const th = createCell('th', 'detail-period-head', periodColumns[0].groupLabel);
+    th.colSpan = periodColumns.length;
+    periodRow.appendChild(th);
+  });
 
   const metricRow = document.createElement('tr');
   const dynamicMetricHeaders = [...metricHeaders];
@@ -418,7 +440,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   detailColumns.forEach((column) => {
     metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
   });
-  thead.append(groupRow, metricRow);
+  thead.append(groupRow, periodRow, metricRow);
 
   const tbody = document.createElement('tbody');
   rows.forEach((row, rowIndex) => {
@@ -491,13 +513,14 @@ function renderPlaceholderTab(config) {
   return section;
 }
 
-function buildOfflineTab(budgetHeader, detailColumns) {
+function buildOfflineTab(budgetHeader, detailPeriods, dimension) {
   const wrapper = createCell('div', 'tab-pane');
   wrapper.appendChild(
     renderReportTable(offlineRetailRows, '线下零售', '固定展示字段', '单位：亿元 / 万人次 / %', '', {
       hideTitle: true,
       budgetHeader,
-      detailColumns,
+      detailPeriods,
+      dimension,
     }),
   );
   return wrapper;
@@ -580,7 +603,7 @@ export function renderApp(root) {
     return formatBudgetPeriod(dimensionSelect.value, startInput.value, endInput.value);
   }
 
-  function getDetailColumns() {
+  function getDetailPeriods() {
     return buildTimeRangeDetailColumns(dimensionSelect.value, startInput.value, endInput.value);
   }
 
@@ -626,7 +649,7 @@ export function renderApp(root) {
   function mountTab(id) {
     tabContent.innerHTML = '';
     if (id === 'offline') {
-      tabContent.appendChild(buildOfflineTab(getBudgetHeader(), getDetailColumns()));
+      tabContent.appendChild(buildOfflineTab(getBudgetHeader(), getDetailPeriods(), dimensionSelect.value));
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));

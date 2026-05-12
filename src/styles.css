@@ -594,6 +594,10 @@ button {
   top: 38px;
 }
 
+.report-table thead tr:nth-child(3) th {
+  top: 76px;
+}
+
 .metric-group.budget-group,
 .budget-head {
   background: var(--yellow-soft);
@@ -605,8 +609,13 @@ button {
 }
 
 .metric-group.detail-group,
+.detail-period-head,
 .detail-head {
   background: var(--purple-soft);
+}
+
+.detail-period-head {
+  color: #4d2f79;
 }
 
 .detail-budget-head {
