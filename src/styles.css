@@ -598,14 +598,9 @@ button {
   top: 76px;
 }
 
-.metric-group.budget-group,
-.budget-head {
+.metric-group.total-group,
+.total-head {
   background: var(--yellow-soft);
-}
-
-.metric-group.compare-group,
-.compare-head {
-  background: var(--green-soft);
 }
 
 .metric-group.detail-group,

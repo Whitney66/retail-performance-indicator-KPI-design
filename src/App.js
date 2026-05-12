@@ -407,11 +407,10 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
 
   const detailPeriods = options.detailPeriods || [];
   const detailColumns = detailPeriods.flat();
-  const budgetGroup = createCell('th', 'metric-group budget-group', '预算进度');
-  budgetGroup.colSpan = 6;
-  const compareGroup = createCell('th', 'metric-group compare-group', '同比分析');
-  compareGroup.colSpan = 4;
-  groupRow.append(budgetGroup, compareGroup);
+  const totalGroup = createCell('th', 'metric-group total-group', '截至本月合计');
+  totalGroup.colSpan = metricHeaders.length;
+  totalGroup.rowSpan = 2;
+  groupRow.appendChild(totalGroup);
   if (detailPeriods.length) {
     const detailGroup = createCell('th', 'metric-group detail-group', getDetailGroupTitle(options.dimension));
     detailGroup.colSpan = detailColumns.length;
@@ -419,11 +418,6 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   }
 
   const periodRow = document.createElement('tr');
-  ['预算进度', '同比分析'].forEach((name, index) => {
-    const th = createCell('th', index === 0 ? 'budget-head' : 'compare-head', name);
-    th.colSpan = index === 0 ? 6 : 4;
-    periodRow.appendChild(th);
-  });
   detailPeriods.forEach((periodColumns) => {
     const th = createCell('th', 'detail-period-head', periodColumns[0].groupLabel);
     th.colSpan = periodColumns.length;
@@ -433,9 +427,8 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   const metricRow = document.createElement('tr');
   const dynamicMetricHeaders = [...metricHeaders];
   if (options.budgetHeader) dynamicMetricHeaders[0] = options.budgetHeader;
-  dynamicMetricHeaders.forEach((name, index) => {
-    const th = createCell('th', index < 6 ? 'budget-head' : 'compare-head', name);
-    metricRow.appendChild(th);
+  dynamicMetricHeaders.forEach((name) => {
+    metricRow.appendChild(createCell('th', 'total-head', name));
   });
   detailColumns.forEach((column) => {
     metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
