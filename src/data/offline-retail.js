@@ -31,7 +31,7 @@ const rowGroups = [
       { category: '销售', indicator: '其他业务收入（亿元）--财务口径' },
       { category: '客流', indicator: '进店人数（万人次）' },
       { category: '客流', indicator: '购买人数（万人次）' },
-      { category: '汇总', indicator: '销售数量（万件）' },
+      { category: '客流', indicator: '销售数量（万件）' },
       { category: '转化', indicator: '转化率' },
       { category: '转化', indicator: '客单价（元/人次）' },
       { category: '转化', indicator: '件单价（元/件）' },
