@@ -6,8 +6,8 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js';
-import { offlineRetailRows } from './data/offline-retail.js';
+} from './data/report-config.js?v=20260512-1748';
+import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1748';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
