@@ -6,8 +6,8 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1748';
-import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1756';
+} from './data/report-config.js?v=20260512-1815';
+import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1815';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -102,6 +102,25 @@ function createDetailColumnsForPeriod(label, previousLabel, periodIndex) {
   ];
 }
 
+function createDailyColumnsForPeriod(label, periodIndex) {
+  return [
+    { groupLabel: label, label: '当天完成', type: 'complete', periodIndex },
+    { groupLabel: label, label: '去年同期', type: 'same', periodIndex },
+    { groupLabel: label, label: '同比', type: 'yoy', periodIndex },
+    { groupLabel: label, label: '环比', type: 'mom', periodIndex },
+  ];
+}
+
+function buildMonthReportColumns() {
+  return [
+    { label: '本月累计完成', type: 'complete', periodIndex: 0 },
+    { label: '完成率', type: 'rate', periodIndex: 1 },
+    { label: '去年同期', type: 'same', periodIndex: 2 },
+    { label: '同比', type: 'yoy', periodIndex: 3 },
+    { label: 'Month-To-Go（当月目标-本月完成）', type: 'mtg', periodIndex: 4 },
+  ];
+}
+
 function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
   if (!startValue || !endValue) return [];
 
@@ -147,19 +166,20 @@ function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
     const year = date.getUTCFullYear();
     const month = date.getUTCMonth() + 1;
     const day = date.getUTCDate();
-    return createDetailColumnsForPeriod(formatDayLabel(year, month, day), formatDayLabel(year - 1, month, day), index);
+    return createDailyColumnsForPeriod(formatDayLabel(year, month, day), index);
   });
 }
 
 function formatDetailMetricCell(rowIndex, column, columnIndex) {
   const base = 34 + rowIndex * 5 + column.periodIndex * 4 + columnIndex;
-  if (column.type === 'yoy') return `${((base % 32) - 6).toFixed(1)}%`;
+  if (column.type === 'yoy' || column.type === 'mom' || column.type === 'rate') return `${((base % 32) - 6).toFixed(1)}%`;
   if (column.type === 'same') return `${((base + 12) / 12).toFixed(2)}`;
+  if (column.type === 'mtg') return `${((base + 26) / 13).toFixed(2)}`;
   return `${((base + 18) / 11).toFixed(2)}`;
 }
 
 function getDetailHeadClass(type) {
-  if (type === 'budget') return 'detail-head detail-budget-head';
+  if (type === 'budget' || type === 'complete' || type === 'mtg') return 'detail-head detail-budget-head';
   if (type === 'same') return 'detail-head detail-same-head';
   return 'detail-head detail-yoy-head';
 }
@@ -398,24 +418,48 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
 
   const detailPeriods = options.detailPeriods || [];
   const detailColumns = detailPeriods.flat();
-  const totalGroup = createCell('th', 'metric-group total-group', '截至本月合计');
-  totalGroup.colSpan = metricHeaders.length;
-  groupRow.appendChild(totalGroup);
-  detailPeriods.forEach((periodColumns) => {
-    const th = createCell('th', 'detail-period-head', periodColumns[0].groupLabel);
-    th.colSpan = periodColumns.length;
-    groupRow.appendChild(th);
-  });
-
+  const monthReportColumns = options.dimension === 'day' ? buildMonthReportColumns() : [];
   const metricRow = document.createElement('tr');
   const dynamicMetricHeaders = [...metricHeaders];
   if (options.budgetHeader) dynamicMetricHeaders[0] = options.budgetHeader;
-  dynamicMetricHeaders.forEach((name) => {
-    metricRow.appendChild(createCell('th', 'total-head', name));
-  });
-  detailColumns.forEach((column) => {
-    metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
-  });
+
+  if (options.dimension === 'day') {
+    const targetGroup = createCell('th', 'metric-group total-group', '月度目标');
+    targetGroup.colSpan = dynamicMetricHeaders.length;
+    groupRow.appendChild(targetGroup);
+    const dailyGroup = createCell('th', 'metric-group detail-group', '日报');
+    dailyGroup.colSpan = detailColumns.length;
+    groupRow.appendChild(dailyGroup);
+    const monthGroup = createCell('th', 'metric-group total-group', '月报');
+    monthGroup.colSpan = monthReportColumns.length;
+    groupRow.appendChild(monthGroup);
+
+    dynamicMetricHeaders.forEach((name) => {
+      metricRow.appendChild(createCell('th', 'total-head', name));
+    });
+    detailColumns.forEach((column) => {
+      metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), `${column.groupLabel}${column.label}`));
+    });
+    monthReportColumns.forEach((column) => {
+      metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
+    });
+  } else {
+    const totalGroup = createCell('th', 'metric-group total-group', '截至本月合计');
+    totalGroup.colSpan = metricHeaders.length;
+    groupRow.appendChild(totalGroup);
+    detailPeriods.forEach((periodColumns) => {
+      const th = createCell('th', 'detail-period-head', periodColumns[0].groupLabel);
+      th.colSpan = periodColumns.length;
+      groupRow.appendChild(th);
+    });
+
+    dynamicMetricHeaders.forEach((name) => {
+      metricRow.appendChild(createCell('th', 'total-head', name));
+    });
+    detailColumns.forEach((column) => {
+      metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
+    });
+  }
   thead.append(groupRow, metricRow);
 
   const tbody = document.createElement('tbody');
@@ -441,7 +485,8 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
     });
 
     const detailCells = detailColumns.map((column, columnIndex) => formatDetailMetricCell(rowIndex, column, columnIndex));
-    [row.indicator, ...row.metrics, ...detailCells].forEach((cell, index) => {
+    const monthReportCells = monthReportColumns.map((column, columnIndex) => formatDetailMetricCell(rowIndex, column, detailCells.length + columnIndex));
+    [row.indicator, ...row.metrics, ...detailCells, ...monthReportCells].forEach((cell, index) => {
       const td = createCell('td', '', cell);
       applyStickyOffset(td, index + 4);
       tr.appendChild(td);

@@ -21,6 +21,8 @@ const hainanRows = [
   { category: '毛利', indicator: '毛利率' },
 ];
 
+const hainanSummaryRows = hainanRows.map((row) => ({ ...row }));
+
 const rowGroups = [
   {
     channel: '汇总',
@@ -62,6 +64,12 @@ const rowGroups = [
     rows: [
       { category: '销售', indicator: '线下收入（亿元）-财务口径' },
     ],
+  },
+  {
+    channel: '海南区域',
+    secondaryChannel: '海南区域小计',
+    store: '海南区域小计',
+    rows: hainanSummaryRows,
   },
   ...hainanStores.map((store) => ({
     channel: '海南区域',
