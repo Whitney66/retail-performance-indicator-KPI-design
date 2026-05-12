@@ -102,15 +102,6 @@ function createDetailColumnsForPeriod(label, previousLabel, periodIndex) {
   ];
 }
 
-function getDetailGroupTitle(dimension) {
-  const dimensionNames = {
-    year: '按年',
-    month: '按月',
-    day: '按日',
-  };
-  return `日期（${dimensionNames[dimension] || '按月'}）`;
-}
-
 function buildTimeRangeDetailColumns(dimension, startValue, endValue) {
   if (!startValue || !endValue) return [];
 
@@ -400,7 +391,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
 
   ['渠道', '二级渠道', '门店', '类别', '指标'].forEach((name, index) => {
     const th = createCell('th', 'sticky-col-head', name);
-    th.rowSpan = 3;
+    th.rowSpan = 2;
     applyStickyOffset(th, index);
     groupRow.appendChild(th);
   });
@@ -409,19 +400,11 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   const detailColumns = detailPeriods.flat();
   const totalGroup = createCell('th', 'metric-group total-group', '截至本月合计');
   totalGroup.colSpan = metricHeaders.length;
-  totalGroup.rowSpan = 2;
   groupRow.appendChild(totalGroup);
-  if (detailPeriods.length) {
-    const detailGroup = createCell('th', 'metric-group detail-group', getDetailGroupTitle(options.dimension));
-    detailGroup.colSpan = detailColumns.length;
-    groupRow.appendChild(detailGroup);
-  }
-
-  const periodRow = document.createElement('tr');
   detailPeriods.forEach((periodColumns) => {
     const th = createCell('th', 'detail-period-head', periodColumns[0].groupLabel);
     th.colSpan = periodColumns.length;
-    periodRow.appendChild(th);
+    groupRow.appendChild(th);
   });
 
   const metricRow = document.createElement('tr');
@@ -433,7 +416,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   detailColumns.forEach((column) => {
     metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
   });
-  thead.append(groupRow, periodRow, metricRow);
+  thead.append(groupRow, metricRow);
 
   const tbody = document.createElement('tbody');
   rows.forEach((row, rowIndex) => {

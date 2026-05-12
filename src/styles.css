@@ -594,10 +594,6 @@ button {
   top: 38px;
 }
 
-.report-table thead tr:nth-child(3) th {
-  top: 76px;
-}
-
 .metric-group.total-group,
 .total-head {
   background: var(--yellow-soft);
