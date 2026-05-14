@@ -6,8 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1825';
+} from './data/report-config.js?v=20260512-1838';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
+import { monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1838';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -549,6 +550,19 @@ function buildOfflineTab(budgetHeader, detailPeriods, dimension) {
   return wrapper;
 }
 
+function buildMonthlyTab(budgetHeader, detailPeriods, dimension) {
+  const wrapper = createCell('div', 'tab-pane');
+  wrapper.appendChild(
+    renderReportTable(monthlySummaryRows, '月度汇总表', '按渠道、二级渠道、门店展示月度指标', '单位：亿元 / 万人次 / %', '', {
+      hideTitle: true,
+      budgetHeader,
+      detailPeriods,
+      dimension,
+    }),
+  );
+  return wrapper;
+}
+
 function createPlatformHeader() {
   const header = createCell('header', 'platform-header');
   const main = createCell('div', 'platform-header-main');
@@ -673,6 +687,10 @@ export function renderApp(root) {
     tabContent.innerHTML = '';
     if (id === 'offline') {
       tabContent.appendChild(buildOfflineTab(getBudgetHeader(), getDetailPeriods(), dimensionSelect.value));
+      return;
+    }
+    if (id === 'monthly') {
+      tabContent.appendChild(buildMonthlyTab(getBudgetHeader(), getDetailPeriods(), dimensionSelect.value));
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));
