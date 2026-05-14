@@ -462,6 +462,11 @@ button {
   margin-left: 8px;
 }
 
+.border-store-switcher {
+  align-self: flex-end;
+  margin: -2px 0 0 auto;
+}
+
 .tab-pane {
   display: flex;
   flex-direction: column;

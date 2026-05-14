@@ -6,9 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1922';
+} from './data/report-config.js?v=20260512-1927';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1922';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1927';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -653,7 +653,7 @@ function renderBorderRankingTable(rows) {
 
 function buildBorderRankingPane() {
   const wrapper = createCell('div', 'tab-pane');
-  const switcher = createCell('div', 'subtab-switcher nested-switcher');
+  const switcher = createCell('div', 'subtab-switcher nested-switcher border-store-switcher');
   const content = createCell('div', 'subtab-content');
 
   function mountRanking(type) {
