@@ -425,6 +425,39 @@ button {
   background: #fff;
 }
 
+.subtab-switcher {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0;
+  border: 1px solid #cfd8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.subtab-btn {
+  border: 0;
+  border-right: 1px solid #cfd8e8;
+  background: #fff;
+  color: #4c5872;
+  padding: 10px 18px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.subtab-btn:last-child {
+  border-right: 0;
+}
+
+.subtab-btn.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+.subtab-content {
+  min-width: 0;
+}
+
 .tab-pane {
   display: flex;
   flex-direction: column;
@@ -716,6 +749,55 @@ button {
   background: var(--blue-soft) !important;
   font-weight: 700;
   color: #24314f;
+}
+
+.border-ranking-card {
+  max-width: 720px;
+}
+
+.border-ranking-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.border-ranking-table th,
+.border-ranking-table td {
+  border-right: 1px solid #2d333f;
+  border-bottom: 1px solid #2d333f;
+  padding: 5px 12px;
+  height: 28px;
+  text-align: center;
+  font-size: 14px;
+  background: #d3dae4;
+}
+
+.border-ranking-table th {
+  background: #fff;
+  font-weight: 700;
+}
+
+.border-ranking-table th:first-child,
+.border-ranking-table td:first-child {
+  border-left: 1px solid #2d333f;
+}
+
+.border-ranking-table thead tr:first-child th {
+  border-top: 1px solid #2d333f;
+}
+
+.border-project-cell {
+  min-width: 120px;
+  vertical-align: middle;
+  font-size: 16px !important;
+}
+
+.border-store-cell {
+  min-width: 220px;
+}
+
+.border-value-cell {
+  min-width: 160px;
 }
 
 .placeholder-card {

@@ -6,11 +6,54 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1902';
+} from './data/report-config.js?v=20260512-1915';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1902';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1915';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
+
+const borderRankingData = {
+  departure: {
+    label: '出境门店',
+    rows: [
+      { project: '转化率', store: '北京大兴', value: '68.4%' },
+      { project: '转化率', store: '沈阳', value: '64.9%' },
+      { project: '转化率', store: '北京首都', value: '63.7%' },
+      { project: '转化率', store: '上海港', value: '62.1%' },
+      { project: '转化率', store: '武汉', value: '59.8%' },
+      { project: '转化率', store: '广州', value: '58.6%' },
+      { project: '转化率', store: '大连', value: '57.4%' },
+      { project: '转化率', store: '成都天府', value: '56.9%' },
+      { project: '转化率', store: '天津', value: '55.1%' },
+      { project: '转化率', store: '湖南', value: '53.8%' },
+      { project: '转化率', store: '昆明', value: '52.6%' },
+      { project: '转化率', store: '上海浦东', value: '51.7%' },
+      { project: '转化率', store: '海口', value: '50.9%' },
+      { project: '转化率', store: '杭州', value: '49.8%' },
+      { project: '转化率', store: '厦门', value: '48.6%' },
+      { project: '转化率', store: '西安', value: '47.9%' },
+      { project: '转化率', store: '上海虹桥', value: '46.8%' },
+      { project: '转化率', store: '青岛', value: '45.6%' },
+      { project: '转化率', store: '满洲里', value: '44.3%' },
+      { project: '转化率', store: '黑河', value: '43.5%' },
+    ],
+  },
+  arrival: {
+    label: '进境门店',
+    rows: [
+      { project: '转化率', store: '北京首都', value: '61.2%' },
+      { project: '转化率', store: '上海虹桥', value: '59.7%' },
+      { project: '转化率', store: '上海浦东', value: '58.4%' },
+      { project: '转化率', store: '广州', value: '56.1%' },
+      { project: '转化率', store: '杭州', value: '54.8%' },
+      { project: '转化率', store: '成都天府', value: '53.3%' },
+      { project: '转化率', store: '大连', value: '52.7%' },
+      { project: '转化率', store: '青岛', value: '51.5%' },
+      { project: '转化率', store: '厦门', value: '50.8%' },
+      { project: '转化率', store: '海口', value: '49.2%' },
+    ],
+  },
+};
 
 const modulePlaceholders = {
   monthly: {
@@ -575,6 +618,59 @@ function renderMonthlySummaryTable(rows) {
   return tableWrap;
 }
 
+function renderBorderRankingTable(rows) {
+  const tableWrap = createCell('div', 'table-card border-ranking-card');
+  const scroll = createCell('div', 'table-scroll');
+  const table = createCell('table', 'border-ranking-table');
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  ['项目', '门店名称', '指标数据'].forEach((name) => {
+    headerRow.appendChild(createCell('th', '', name));
+  });
+  thead.appendChild(headerRow);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach((row, rowIndex) => {
+    const tr = document.createElement('tr');
+    if (rowIndex === 0) {
+      const projectCell = createCell('td', 'border-project-cell', row.project);
+      projectCell.rowSpan = rows.length;
+      tr.appendChild(projectCell);
+    }
+    tr.append(createCell('td', 'border-store-cell', row.store), createCell('td', 'border-value-cell', row.value));
+    tbody.appendChild(tr);
+  });
+
+  table.append(thead, tbody);
+  scroll.appendChild(table);
+  tableWrap.appendChild(scroll);
+  return tableWrap;
+}
+
+function buildBorderRankingTab() {
+  const wrapper = createCell('div', 'tab-pane');
+  const switcher = createCell('div', 'subtab-switcher');
+  const content = createCell('div', 'subtab-content');
+
+  function mountRanking(type) {
+    [...switcher.children].forEach((button) => button.classList.toggle('active', button.dataset.type === type));
+    content.innerHTML = '';
+    content.appendChild(renderBorderRankingTable(borderRankingData[type].rows));
+  }
+
+  Object.entries(borderRankingData).forEach(([type, config], index) => {
+    const button = createCell('button', index === 0 ? 'subtab-btn active' : 'subtab-btn', config.label);
+    button.type = 'button';
+    button.dataset.type = type;
+    button.addEventListener('click', () => mountRanking(type));
+    switcher.appendChild(button);
+  });
+
+  wrapper.append(switcher, content);
+  mountRanking('departure');
+  return wrapper;
+}
+
 function renderPlaceholderTab(config) {
   const section = createCell('section', 'placeholder-card');
   const head = createCell('div', 'section-head');
@@ -756,6 +852,14 @@ export function renderApp(root) {
     }
     if (id === 'monthly') {
       tabContent.appendChild(buildMonthlyTab());
+      return;
+    }
+    if (id === 'borderRanking') {
+      tabContent.appendChild(buildBorderRankingTab());
+      return;
+    }
+    if (id === 'borderMonitor') {
+      tabContent.appendChild(renderPlaceholderTab(modulePlaceholders.border));
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));

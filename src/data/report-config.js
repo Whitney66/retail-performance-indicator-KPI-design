@@ -13,7 +13,8 @@ export const platformNavItems = [
 export const reportTabs = [
   { id: 'offline', label: '线下零售' },
   { id: 'monthly', label: '月度汇总表' },
-  { id: 'border', label: '出入境口岸排名与监控' },
+  { id: 'borderRanking', label: '出入境口岸排名' },
+  { id: 'borderMonitor', label: '客源及零售指标监控' },
   { id: 'city', label: '市内店零售指标情况' },
   { id: 'commerce', label: '中免商贸零售指标情况' },
 ];
