@@ -11,6 +11,8 @@ import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
 import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1948';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
+const monitorReportYear = 2026;
+const monitorComparisonYear = monitorReportYear - 1;
 
 const borderRankingProjects = [
   { name: '转化率', unit: '%', base: 68.4, step: 1.7 },
@@ -68,30 +70,48 @@ const borderRankingData = {
   },
 };
 
-const borderMonitorMetrics = [
-  { section: '主要口岸出境合计', item: '客流人数（人次）', highlight: true },
-  { section: '主要口岸出境合计', item: '出境收入（万元）', highlight: true },
-  { section: '主要口岸出境合计', item: '毛利额（万元）' },
-  { section: '主要口岸出境合计', item: '购买人数（人次）' },
-  { section: '主要口岸出境合计', item: '小票数（张）' },
-  { section: '主要口岸出境合计', item: '销售数量（件）' },
-  { section: '主要口岸出境合计', item: '转化率' },
-  { section: '主要口岸出境合计', item: '毛利率' },
-  { section: '主要口岸出境合计', item: '票单价（元/张）' },
-  { section: '主要口岸出境合计', item: '客单价（元/人次）' },
-  { section: '主要口岸出境合计', item: '人均购物额（元/人次）' },
-  { section: '主要口岸出境合计', item: '连带率' },
-  { section: '主要口岸出境合计', item: '经营面积（平方米）', highlight: true },
-  { section: '主要口岸出境合计', item: '坪效（元/平方米）' },
-  { section: '主要口岸出境合计', item: '营业人员（人）', highlight: true },
-  { section: '主要口岸出境合计', item: '劳效（元/人）' },
-  { section: '北京大兴', item: '客流人数（人次）' },
-  { section: '北京大兴', item: '出境收入（万元）' },
-  { section: '北京大兴', item: '毛利额（万元）' },
-  { section: '北京大兴', item: '购买人数（人次）' },
-  { section: '北京大兴', item: '转化率' },
-  { section: '北京大兴', item: '客单价（元/人次）' },
-];
+const borderMonitorStoreGroups = {
+  departure: {
+    label: '出境门店',
+    summary: '主要口岸出境合计',
+    stores: ['北京大兴', '北京首都', '上海浦东', '广州', '成都天府'],
+    revenueLabel: '出境收入（万元）',
+  },
+  arrival: {
+    label: '进境门店',
+    summary: '主要口岸进境合计',
+    stores: ['北京首都', '上海虹桥', '上海浦东', '广州', '杭州'],
+    revenueLabel: '进境收入（万元）',
+  },
+};
+
+function buildBorderMonitorMetrics(type) {
+  const config = borderMonitorStoreGroups[type] || borderMonitorStoreGroups.departure;
+  const summaryMetrics = [
+    { item: '客流人数（人次）' },
+    { item: config.revenueLabel },
+    { item: '毛利额（万元）' },
+    { item: '购买人数（人次）' },
+    { item: '小票数（张）' },
+    { item: '销售数量（件）' },
+    { item: '转化率' },
+    { item: '毛利率' },
+    { item: '票单价（元/张）' },
+    { item: '客单价（元/人次）' },
+    { item: '人均购物额（元/人次）' },
+    { item: '连带率' },
+    { item: '经营面积（平方米）' },
+    { item: '坪效（元/平方米）' },
+    { item: '营业人员（人）' },
+    { item: '劳效（元/人）' },
+  ];
+  const storeMetrics = ['客流人数（人次）', config.revenueLabel, '毛利额（万元）', '购买人数（人次）', '转化率', '客单价（元/人次）'];
+
+  return [
+    ...summaryMetrics.map((metric) => ({ section: config.summary, ...metric })),
+    ...config.stores.flatMap((store) => storeMetrics.map((item) => ({ section: store, item }))),
+  ];
+}
 
 function getCurrentMonth() {
   return new Date().getMonth() + 1;
@@ -721,18 +741,19 @@ function renderBorderRankingTable(rows) {
   return tableWrap;
 }
 
-function renderBorderMonitorTable() {
-  const currentYear = new Date().getFullYear();
+function renderBorderMonitorTable(type = 'departure') {
+  const metrics = buildBorderMonitorMetrics(type);
+  const storeLabel = borderMonitorStoreGroups[type]?.label || borderMonitorStoreGroups.departure.label;
   const currentMonth = getCurrentMonth();
   const currentYearMonths = buildMonthColumns(currentMonth);
   const fullYearMonths = buildMonthColumns(12);
   const dataColumns = [
-    ...currentYearMonths.map((label) => ({ group: `${currentYear}年`, label, type: 'current' })),
-    { group: `${currentYear}年`, label: '合计', type: 'current' },
-    ...fullYearMonths.map((label) => ({ group: `${currentYear - 1}年`, label, type: 'lastYear' })),
-    { group: `${currentYear - 1}年`, label: '合计', type: 'lastYear' },
-    ...fullYearMonths.map((label) => ({ group: `同比${currentYear - 1}年`, label, type: 'yoy' })),
-    { group: `同比${currentYear - 1}年`, label: '合计', type: 'yoy' },
+    ...currentYearMonths.map((label) => ({ group: `${monitorReportYear}年`, label, type: 'current' })),
+    { group: `${monitorReportYear}年`, label: '合计', type: 'current' },
+    ...fullYearMonths.map((label) => ({ group: `${monitorComparisonYear}年`, label, type: 'lastYear' })),
+    { group: `${monitorComparisonYear}年`, label: '合计', type: 'lastYear' },
+    ...fullYearMonths.map((label) => ({ group: `同比${monitorComparisonYear}年`, label, type: 'yoy' })),
+    { group: `同比${monitorComparisonYear}年`, label: '合计', type: 'yoy' },
   ];
   const tableWrap = createCell('div', 'table-card border-monitor-card');
   const scroll = createCell('div', 'table-scroll');
@@ -741,12 +762,12 @@ function renderBorderMonitorTable() {
   const groupRow = document.createElement('tr');
   const monthRow = document.createElement('tr');
 
-  ['出境门店', '项目'].forEach((name) => {
+  [storeLabel, '项目'].forEach((name) => {
     const th = createCell('th', 'monitor-sticky-head', name);
     th.rowSpan = 2;
     groupRow.appendChild(th);
   });
-  [`${currentYear}年`, `${currentYear - 1}年`, `同比${currentYear - 1}年`].forEach((name) => {
+  [`${monitorReportYear}年`, `${monitorComparisonYear}年`, `同比${monitorComparisonYear}年`].forEach((name) => {
     const th = createCell('th', 'monitor-year-head', name);
     th.colSpan = dataColumns.filter((column) => column.group === name).length;
     groupRow.appendChild(th);
@@ -757,15 +778,15 @@ function renderBorderMonitorTable() {
   thead.append(groupRow, monthRow);
 
   const tbody = document.createElement('tbody');
-  borderMonitorMetrics.forEach((row, rowIndex) => {
+  metrics.forEach((row, rowIndex) => {
     const tr = document.createElement('tr');
-    const previousRow = borderMonitorMetrics[rowIndex - 1];
+    const previousRow = metrics[rowIndex - 1];
     if (!previousRow || previousRow.section !== row.section) {
       const sectionCell = createCell('td', 'monitor-section-cell', row.section);
-      sectionCell.rowSpan = borderMonitorMetrics.filter((item) => item.section === row.section).length;
+      sectionCell.rowSpan = metrics.filter((item) => item.section === row.section).length;
       tr.appendChild(sectionCell);
     }
-    tr.appendChild(createCell('td', row.highlight ? 'monitor-item-cell monitor-highlight-cell' : 'monitor-item-cell', row.item));
+    tr.appendChild(createCell('td', 'monitor-item-cell', row.item));
     buildBorderMonitorCells(rowIndex, row.item, dataColumns).forEach((cell, cellIndex) => {
       const column = dataColumns[cellIndex];
       tr.appendChild(createCell('td', column.label === '合计' ? 'monitor-total-cell' : '', cell));
@@ -803,10 +824,29 @@ function buildBorderRankingPane() {
   return wrapper;
 }
 
+function createBorderMonitorStoreSwitcher(onChange) {
+  const switcher = createCell('div', 'subtab-switcher border-store-switcher');
+
+  Object.entries(borderMonitorStoreGroups).forEach(([type, config], index) => {
+    const button = createCell('button', index === 0 ? 'subtab-btn active' : 'subtab-btn', config.label);
+    button.type = 'button';
+    button.dataset.type = type;
+    button.addEventListener('click', () => {
+      [...switcher.children].forEach((node) => node.classList.toggle('active', node.dataset.type === type));
+      onChange(type);
+    });
+    switcher.appendChild(button);
+  });
+
+  return switcher;
+}
+
 function buildBorderTab() {
   const wrapper = createCell('div', 'tab-pane');
+  const header = createCell('div', 'border-subtab-header');
   const switcher = createCell('div', 'subtab-switcher');
   const content = createCell('div', 'subtab-content');
+  let monitorType = 'departure';
   const tabs = [
     { id: 'ranking', label: '出入境口岸排名' },
     { id: 'monitor', label: '客源及零售指标监控' },
@@ -815,12 +855,19 @@ function buildBorderTab() {
   function mountBorderSubtab(id) {
     [...switcher.children].forEach((button) => button.classList.toggle('active', button.dataset.id === id));
     content.innerHTML = '';
+    header.classList.toggle('show-store-switcher', id === 'monitor');
     if (id === 'ranking') {
       content.appendChild(buildBorderRankingPane());
       return;
     }
-    content.appendChild(renderBorderMonitorTable());
+    content.appendChild(renderBorderMonitorTable(monitorType));
   }
+
+  const monitorSwitcher = createBorderMonitorStoreSwitcher((type) => {
+    monitorType = type;
+    const activeSubtab = [...switcher.children].find((button) => button.classList.contains('active'));
+    if (activeSubtab?.dataset.id === 'monitor') mountBorderSubtab('monitor');
+  });
 
   tabs.forEach((tab, index) => {
     const button = createCell('button', index === 0 ? 'subtab-btn active' : 'subtab-btn', tab.label);
@@ -830,7 +877,8 @@ function buildBorderTab() {
     switcher.appendChild(button);
   });
 
-  wrapper.append(switcher, content);
+  header.append(switcher, monitorSwitcher);
+  wrapper.append(header, content);
   mountBorderSubtab('ranking');
   return wrapper;
 }

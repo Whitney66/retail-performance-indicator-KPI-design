@@ -458,6 +458,21 @@ button {
   min-width: 0;
 }
 
+.border-subtab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.border-subtab-header .border-store-switcher {
+  display: none;
+}
+
+.border-subtab-header.show-store-switcher .border-store-switcher {
+  display: inline-flex;
+}
+
 .nested-switcher {
   margin-left: 8px;
 }
