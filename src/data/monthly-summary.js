@@ -1,4 +1,17 @@
-import { detailMetricTemplates, metricHeaders } from './report-config.js?v=20260512-1838';
+export const monthlyMetricGroups = [
+  '销售收入（万元）',
+  '离岛人数（万人次）',
+  '进店人数（万人次）',
+  '进店率',
+  '转化率',
+  '客单价（元/人次）',
+  '连带率',
+  '件单价（元/件）',
+  '人均购物额（元/人次）',
+];
+
+const monthFields = ['本月目标', '本月完成', '完成率', '上月完成', '环比', '去年同期', '同比'];
+const yearFields = ['目标', '实际完成', '完成率', '去年同期', '同比'];
 
 const monthlyChannelGroups = [
   {
@@ -52,31 +65,40 @@ const monthlyChannelGroups = [
   },
 ];
 
-const monthlyRows = monthlyChannelGroups.flatMap((group) =>
-  group.stores.flatMap((store) =>
-    detailMetricTemplates.map((row) => ({
-      channel: group.channel,
-      secondaryChannel: group.secondaryChannel,
-      store,
-      ...row,
-    })),
-  ),
-);
+const monthlyRows = monthlyChannelGroups.flatMap((group) => [
+  {
+    channel: group.channel,
+    secondaryChannel: group.secondaryChannel,
+    store: group.secondaryChannel,
+    isSecondarySummary: true,
+  },
+  ...group.stores.map((store) => ({
+    channel: group.channel,
+    secondaryChannel: group.secondaryChannel,
+    store,
+    isSecondarySummary: false,
+  })),
+]);
 
-function buildMetricCells(seed) {
-  return metricHeaders.map((_, index) => {
-    const base = seed + index * 6;
-    if (index === 2 || index === 4 || index === 7 || index === 9) {
-      return `${(base % 34 + 62).toFixed(1)}%`;
-    }
-    if (index === 5) {
-      return `${(base / 9).toFixed(2)}`;
-    }
-    return `${(base / 10).toFixed(2)}`;
-  });
+function formatMonthlyCell(seed, metricName, fieldName) {
+  if (fieldName.includes('率') || fieldName === '环比' || fieldName === '同比' || metricName.includes('率')) {
+    return `${(seed % 38 + 58).toFixed(1)}%`;
+  }
+  if (metricName.includes('元')) {
+    return `${(seed * 13.6).toFixed(2)}`;
+  }
+  return `${(seed / 3.8).toFixed(2)}`;
+}
+
+function buildMonthlyMetricCells(rowIndex) {
+  return monthlyMetricGroups.flatMap((metricName, metricIndex) =>
+    [...monthFields, ...yearFields].map((fieldName, fieldIndex) =>
+      formatMonthlyCell(32 + rowIndex * 3 + metricIndex * 5 + fieldIndex, metricName, fieldName),
+    ),
+  );
 }
 
 export const monthlySummaryRows = monthlyRows.map((row, index) => ({
   ...row,
-  metrics: buildMetricCells(48 + index * 4),
+  metrics: buildMonthlyMetricCells(index),
 }));

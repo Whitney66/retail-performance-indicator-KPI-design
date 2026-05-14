@@ -6,9 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1838';
+} from './data/report-config.js?v=20260512-1852';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1838';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1852';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -503,6 +503,76 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
   return tableWrap;
 }
 
+function renderMonthlySummaryTable(rows) {
+  const tableWrap = createCell('div', 'table-card');
+  const head = createCell('div', 'section-head compact');
+  const scroll = createCell('div', 'table-scroll');
+  const table = createCell('table', 'report-table monthly-summary-table');
+  const thead = document.createElement('thead');
+  const metricGroupRow = document.createElement('tr');
+  const periodRow = document.createElement('tr');
+  const fieldRow = document.createElement('tr');
+  const monthFields = ['本月目标', '本月完成', '完成率', '上月完成', '环比', '去年同期', '同比'];
+  const yearFields = ['目标', '实际完成', '完成率', '去年同期', '同比'];
+
+  ['渠道', '二级渠道', '门店'].forEach((name, index) => {
+    const th = createCell('th', 'sticky-col-head', name);
+    th.rowSpan = 3;
+    applyStickyOffset(th, index);
+    metricGroupRow.appendChild(th);
+  });
+
+  monthlyMetricGroups.forEach((name) => {
+    const th = createCell('th', 'metric-group monthly-metric-group', name);
+    th.colSpan = monthFields.length + yearFields.length;
+    metricGroupRow.appendChild(th);
+
+    const monthTh = createCell('th', 'monthly-period-head', '本月');
+    monthTh.colSpan = monthFields.length;
+    periodRow.appendChild(monthTh);
+    const yearTh = createCell('th', 'monthly-period-head', '本年累计');
+    yearTh.colSpan = yearFields.length;
+    periodRow.appendChild(yearTh);
+
+    [...monthFields, ...yearFields].forEach((field) => {
+      fieldRow.appendChild(createCell('th', 'monthly-field-head', field));
+    });
+  });
+  thead.append(metricGroupRow, periodRow, fieldRow);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach((row, rowIndex) => {
+    const tr = document.createElement('tr');
+    const mergeColumns = [
+      { key: 'channel', className: 'channel-merged-cell' },
+      { key: 'secondaryChannel', className: 'dimension-merged-cell' },
+      { key: 'store', className: 'dimension-merged-cell' },
+    ];
+
+    mergeColumns.forEach(({ key, className }, index) => {
+      const previousRow = rows[rowIndex - 1];
+      const shouldMerge = previousRow && mergeColumns.slice(0, index + 1).every((column) => previousRow[column.key] === row[column.key]);
+      if (shouldMerge) return;
+
+      const rowSpan = rows.filter((item) => mergeColumns.slice(0, index + 1).every((column) => item[column.key] === row[column.key])).length;
+      const td = createCell('td', row.isSecondarySummary && key === 'store' ? `${className} monthly-summary-cell` : className, row[key]);
+      td.rowSpan = rowSpan;
+      applyStickyOffset(td, index);
+      tr.appendChild(td);
+    });
+
+    row.metrics.forEach((cell) => {
+      tr.appendChild(createCell('td', '', cell));
+    });
+    tbody.appendChild(tr);
+  });
+
+  table.append(thead, tbody);
+  scroll.appendChild(table);
+  tableWrap.append(head, scroll);
+  return tableWrap;
+}
+
 function renderPlaceholderTab(config) {
   const section = createCell('section', 'placeholder-card');
   const head = createCell('div', 'section-head');
@@ -550,16 +620,9 @@ function buildOfflineTab(budgetHeader, detailPeriods, dimension) {
   return wrapper;
 }
 
-function buildMonthlyTab(budgetHeader, detailPeriods, dimension) {
+function buildMonthlyTab() {
   const wrapper = createCell('div', 'tab-pane');
-  wrapper.appendChild(
-    renderReportTable(monthlySummaryRows, '月度汇总表', '按渠道、二级渠道、门店展示月度指标', '单位：亿元 / 万人次 / %', '', {
-      hideTitle: true,
-      budgetHeader,
-      detailPeriods,
-      dimension,
-    }),
-  );
+  wrapper.appendChild(renderMonthlySummaryTable(monthlySummaryRows));
   return wrapper;
 }
 
@@ -690,7 +753,7 @@ export function renderApp(root) {
       return;
     }
     if (id === 'monthly') {
-      tabContent.appendChild(buildMonthlyTab(getBudgetHeader(), getDetailPeriods(), dimensionSelect.value));
+      tabContent.appendChild(buildMonthlyTab());
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));

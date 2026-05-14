@@ -595,8 +595,29 @@ button {
 }
 
 .metric-group.total-group,
-.total-head {
+.total-head,
+.monthly-metric-group,
+.monthly-field-head {
   background: var(--yellow-soft);
+}
+
+.monthly-period-head {
+  background: #fff9ea;
+  color: #6f4c00;
+}
+
+.monthly-summary-table {
+  min-width: 9800px;
+}
+
+.monthly-summary-table td:nth-child(3),
+.monthly-summary-table th:nth-child(3) {
+  min-width: 180px;
+  text-align: center;
+}
+
+.monthly-summary-cell {
+  background: #eef8ff !important;
 }
 
 .metric-group.detail-group,
