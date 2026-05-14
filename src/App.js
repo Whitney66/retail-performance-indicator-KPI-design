@@ -179,6 +179,63 @@ const cityRetailMetrics = [
   '件单价',
 ];
 
+const commerceStores = [
+  '商贸主要门店自营合计',
+  '兰州',
+  '成都',
+  '大兴',
+  '上海',
+  '首都小计（首都+首都二分）',
+  '首都',
+  '首都二分',
+  '哈尔滨',
+  '广州',
+  '杭州小计（杭州T4+T3）',
+  '杭州T4',
+  '杭州T3',
+  '深圳',
+];
+
+const commerceRetailMetrics = [
+  '客流人数（人次）',
+  '销售收入（万元）',
+  '毛利额（万元）',
+  '进店人数（人次）',
+  '购买人数（人次）',
+  '小票数（张）',
+  '销售数量（件）',
+  '经营面积（平方米）',
+  '营业人员（人）',
+  '进店率',
+  '转化率',
+  '毛利率',
+  '客单价（元/人次）',
+  '人均购物额（元/人次）',
+  '票单价（元/张）',
+  '连带率',
+  '坪效（元/平方米）',
+  '劳效（元/人）',
+  '件单价',
+];
+
+const commerceRankingStores = ['兰州', '成都', '大兴', '上海', '深圳', '杭州T3', '杭州T4', '首都', '首都二分', '广州', '哈尔滨', '昆明', '呼和浩特'];
+const commerceRankingProjects = ['转化率', '客单价（元/人次）', '人均购物额（元/人次）', '坪效（元/平方米）', '劳效（元/人）', '连带率'];
+
+function buildCommerceRankingRows() {
+  return commerceRankingProjects.flatMap((project, projectIndex) =>
+    Array.from({ length: 20 }, (_, rankIndex) => {
+      const store = commerceRankingStores[rankIndex] || '';
+      const base = 78 - projectIndex * 4 - rankIndex * 1.3;
+      return {
+        project,
+        rank: rankIndex + 1,
+        store,
+        value: store ? (project.includes('率') ? `${base.toFixed(1)}%` : `${Math.round((base + 20) * 118).toLocaleString('zh-CN')}`) : '',
+      };
+    }),
+  );
+}
+
 const modulePlaceholders = {
   monthly: {
     title: '月度汇总表',
@@ -909,6 +966,130 @@ function buildCityTab() {
   return wrapper;
 }
 
+function renderCommerceRetailTable() {
+  const dataColumns = buildCityRetailColumns();
+  const tableWrap = createCell('div', 'table-card commerce-retail-card');
+  const scroll = createCell('div', 'table-scroll');
+  const table = createCell('table', 'commerce-retail-table');
+  const thead = document.createElement('thead');
+  const groupRow = document.createElement('tr');
+  const monthRow = document.createElement('tr');
+
+  ['门店', '项目'].forEach((name) => {
+    const th = createCell('th', 'commerce-sticky-head', name);
+    th.rowSpan = 2;
+    groupRow.appendChild(th);
+  });
+  [`${monitorReportYear}年`, `${monitorComparisonYear}年`].forEach((name) => {
+    const th = createCell('th', 'commerce-year-head', name);
+    th.colSpan = dataColumns.filter((column) => column.group === name).length;
+    groupRow.appendChild(th);
+  });
+  dataColumns.forEach((column) => {
+    monthRow.appendChild(createCell('th', column.label === '合计' ? 'commerce-total-head' : 'commerce-month-head', column.label));
+  });
+  thead.append(groupRow, monthRow);
+
+  const tbody = document.createElement('tbody');
+  commerceStores.forEach((store, storeIndex) => {
+    commerceRetailMetrics.forEach((metric, metricIndex) => {
+      const tr = document.createElement('tr');
+      if (metricIndex === 0) {
+        const storeCell = createCell('td', storeIndex === 0 ? 'commerce-store-cell commerce-summary-store-cell' : 'commerce-store-cell', store);
+        storeCell.rowSpan = commerceRetailMetrics.length;
+        tr.appendChild(storeCell);
+      }
+      tr.appendChild(createCell('td', 'commerce-metric-cell', metric));
+      buildBorderMonitorCells(storeIndex * commerceRetailMetrics.length + metricIndex, metric, dataColumns).forEach((cell, cellIndex) => {
+        const column = dataColumns[cellIndex];
+        tr.appendChild(createCell('td', column.label === '合计' ? 'commerce-total-cell' : '', cell));
+      });
+      tbody.appendChild(tr);
+    });
+  });
+
+  table.append(thead, tbody);
+  scroll.appendChild(table);
+  tableWrap.appendChild(scroll);
+  return tableWrap;
+}
+
+function renderCommerceRankingTable() {
+  const rows = buildCommerceRankingRows();
+  const tableWrap = createCell('div', 'table-card commerce-ranking-card');
+  const scroll = createCell('div', 'table-scroll');
+  const table = createCell('table', 'commerce-ranking-table');
+  const thead = document.createElement('thead');
+  const groupRow = document.createElement('tr');
+  const subRow = document.createElement('tr');
+
+  ['序号', '项目', '排名'].forEach((name) => {
+    const th = createCell('th', 'commerce-ranking-head', name);
+    th.rowSpan = 2;
+    groupRow.appendChild(th);
+  });
+  const storeGroup = createCell('th', 'commerce-ranking-head', '商贸门店');
+  storeGroup.colSpan = 2;
+  groupRow.appendChild(storeGroup);
+  ['门店名称', '指标数据'].forEach((name) => subRow.appendChild(createCell('th', 'commerce-ranking-head', name)));
+  thead.append(groupRow, subRow);
+
+  const tbody = document.createElement('tbody');
+  rows.forEach((row, rowIndex) => {
+    const tr = document.createElement('tr');
+    const previousRow = rows[rowIndex - 1];
+    const projectRows = rows.filter((item) => item.project === row.project);
+    if (!previousRow || previousRow.project !== row.project) {
+      const projectIndex = commerceRankingProjects.indexOf(row.project) + 1;
+      const indexCell = createCell('td', 'commerce-ranking-merged-cell', `${projectIndex}`);
+      indexCell.rowSpan = projectRows.length;
+      tr.appendChild(indexCell);
+      const projectCell = createCell('td', 'commerce-ranking-merged-cell', row.project);
+      projectCell.rowSpan = projectRows.length;
+      tr.appendChild(projectCell);
+    }
+    tr.append(
+      createCell('td', 'commerce-ranking-rank-cell', `${row.rank}`),
+      createCell('td', 'commerce-ranking-store-cell', row.store),
+      createCell('td', 'commerce-ranking-value-cell', row.value),
+    );
+    tbody.appendChild(tr);
+  });
+
+  table.append(thead, tbody);
+  scroll.appendChild(table);
+  tableWrap.appendChild(scroll);
+  return tableWrap;
+}
+
+function buildCommerceTab() {
+  const wrapper = createCell('div', 'tab-pane');
+  const switcher = createCell('div', 'subtab-switcher');
+  const content = createCell('div', 'subtab-content');
+  const tabs = [
+    { id: 'retail', label: '商贸自营店零售指标情况' },
+    { id: 'ranking', label: '商贸全排名' },
+  ];
+
+  function mountCommerceSubtab(id) {
+    [...switcher.children].forEach((button) => button.classList.toggle('active', button.dataset.id === id));
+    content.innerHTML = '';
+    content.appendChild(id === 'ranking' ? renderCommerceRankingTable() : renderCommerceRetailTable());
+  }
+
+  tabs.forEach((tab, index) => {
+    const button = createCell('button', index === 0 ? 'subtab-btn active' : 'subtab-btn', tab.label);
+    button.type = 'button';
+    button.dataset.id = tab.id;
+    button.addEventListener('click', () => mountCommerceSubtab(tab.id));
+    switcher.appendChild(button);
+  });
+
+  wrapper.append(switcher, content);
+  mountCommerceSubtab('retail');
+  return wrapper;
+}
+
 function buildBorderRankingPane() {
   const wrapper = createCell('div', 'tab-pane');
   const switcher = createCell('div', 'subtab-switcher nested-switcher border-store-switcher');
@@ -1181,6 +1362,10 @@ export function renderApp(root) {
     }
     if (id === 'city') {
       tabContent.appendChild(buildCityTab());
+      return;
+    }
+    if (id === 'commerce') {
+      tabContent.appendChild(buildCommerceTab());
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));
