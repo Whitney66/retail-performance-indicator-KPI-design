@@ -795,6 +795,17 @@ function buildYearComparisonColumns(reportYear = monitorReportYear, currentMonth
   ];
 }
 
+function buildCityRetailColumns(reportYear = monitorReportYear, currentMonth = getCurrentMonth()) {
+  const currentYearMonths = buildMonthColumns(currentMonth);
+  const fullYearMonths = buildMonthColumns(12);
+  return [
+    ...currentYearMonths.map((label) => ({ group: `${reportYear}年`, label, type: 'current' })),
+    { group: `${reportYear}年`, label: '合计', type: 'current' },
+    ...fullYearMonths.map((label) => ({ group: `${reportYear - 1}年`, label, type: 'lastYear' })),
+    { group: `${reportYear - 1}年`, label: '合计', type: 'lastYear' },
+  ];
+}
+
 function renderBorderMonitorTable(type = 'departure') {
   const metrics = buildBorderMonitorMetrics(type);
   const storeLabel = borderMonitorStoreGroups[type]?.label || borderMonitorStoreGroups.departure.label;
@@ -845,7 +856,7 @@ function renderBorderMonitorTable(type = 'departure') {
 }
 
 function renderCityRetailTable() {
-  const dataColumns = buildYearComparisonColumns();
+  const dataColumns = buildCityRetailColumns();
   const tableWrap = createCell('div', 'table-card city-retail-card');
   const scroll = createCell('div', 'table-scroll');
   const table = createCell('table', 'city-retail-table');
@@ -858,7 +869,7 @@ function renderCityRetailTable() {
     th.rowSpan = 2;
     groupRow.appendChild(th);
   });
-  [`${monitorReportYear}年`, `${monitorComparisonYear}年`, `同比${monitorComparisonYear}年`].forEach((name) => {
+  [`${monitorReportYear}年`, `${monitorComparisonYear}年`].forEach((name) => {
     const th = createCell('th', 'city-year-head', name);
     th.colSpan = dataColumns.filter((column) => column.group === name).length;
     groupRow.appendChild(th);

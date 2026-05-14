@@ -844,7 +844,7 @@ button {
 .city-retail-table {
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 5600px;
+  min-width: 3450px;
   width: 100%;
 }
 
@@ -908,19 +908,25 @@ button {
   background: #ffff00 !important;
 }
 
+.city-retail-table th,
+.city-retail-table td {
+  padding: 4px 7px;
+  min-width: 86px;
+}
+
 .city-retail-table th:first-child,
 .city-retail-table td:first-child {
-  min-width: 220px;
+  min-width: 170px;
 }
 
 .city-retail-table th:nth-child(2),
 .city-retail-table td:nth-child(2) {
-  min-width: 300px;
+  min-width: 190px;
 }
 
 .city-store-cell {
   background: #d9e5f6 !important;
-  font-size: 17px !important;
+  font-size: 15px !important;
   font-weight: 700;
   vertical-align: middle;
 }
@@ -931,7 +937,7 @@ button {
 
 .city-metric-cell {
   background: #f1f1f1 !important;
-  font-size: 16px !important;
+  font-size: 14px !important;
   font-weight: 700;
 }
 
