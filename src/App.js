@@ -6,52 +6,65 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1927';
+} from './data/report-config.js?v=20260512-1934';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1927';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1934';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
+
+const borderRankingProjects = [
+  { name: '转化率', unit: '%', base: 68.4, step: 1.7 },
+  { name: '客单价（元/人次）', unit: '', base: 1280, step: 36 },
+  { name: '坪效（元/平方米）', unit: '', base: 9200, step: 215 },
+  { name: '劳效（元/人）', unit: '', base: 18600, step: 430 },
+];
+
+const departureStores = [
+  '北京大兴',
+  '沈阳',
+  '北京首都',
+  '上海港',
+  '武汉',
+  '广州',
+  '大连',
+  '成都天府',
+  '天津',
+  '湖南',
+  '昆明',
+  '上海浦东',
+  '海口',
+  '杭州',
+  '厦门',
+  '西安',
+  '上海虹桥',
+  '青岛',
+  '满洲里',
+  '黑河',
+];
+
+const arrivalStores = ['北京首都', '上海虹桥', '上海浦东', '广州', '杭州', '成都天府', '大连', '青岛', '厦门', '海口'];
+
+function buildBorderRankingRows(stores, offset = 0) {
+  return borderRankingProjects.flatMap((project, projectIndex) =>
+    stores.map((store, storeIndex) => {
+      const value = project.base - storeIndex * project.step - projectIndex * 2.5 - offset;
+      return {
+        project: project.name,
+        store,
+        value: project.unit ? `${value.toFixed(1)}${project.unit}` : `${Math.round(value).toLocaleString('zh-CN')}`,
+      };
+    }),
+  );
+}
 
 const borderRankingData = {
   departure: {
     label: '出境门店',
-    rows: [
-      { project: '转化率', store: '北京大兴', value: '68.4%' },
-      { project: '转化率', store: '沈阳', value: '64.9%' },
-      { project: '转化率', store: '北京首都', value: '63.7%' },
-      { project: '转化率', store: '上海港', value: '62.1%' },
-      { project: '转化率', store: '武汉', value: '59.8%' },
-      { project: '转化率', store: '广州', value: '58.6%' },
-      { project: '转化率', store: '大连', value: '57.4%' },
-      { project: '转化率', store: '成都天府', value: '56.9%' },
-      { project: '转化率', store: '天津', value: '55.1%' },
-      { project: '转化率', store: '湖南', value: '53.8%' },
-      { project: '转化率', store: '昆明', value: '52.6%' },
-      { project: '转化率', store: '上海浦东', value: '51.7%' },
-      { project: '转化率', store: '海口', value: '50.9%' },
-      { project: '转化率', store: '杭州', value: '49.8%' },
-      { project: '转化率', store: '厦门', value: '48.6%' },
-      { project: '转化率', store: '西安', value: '47.9%' },
-      { project: '转化率', store: '上海虹桥', value: '46.8%' },
-      { project: '转化率', store: '青岛', value: '45.6%' },
-      { project: '转化率', store: '满洲里', value: '44.3%' },
-      { project: '转化率', store: '黑河', value: '43.5%' },
-    ],
+    rows: buildBorderRankingRows(departureStores),
   },
   arrival: {
     label: '进境门店',
-    rows: [
-      { project: '转化率', store: '北京首都', value: '61.2%' },
-      { project: '转化率', store: '上海虹桥', value: '59.7%' },
-      { project: '转化率', store: '上海浦东', value: '58.4%' },
-      { project: '转化率', store: '广州', value: '56.1%' },
-      { project: '转化率', store: '杭州', value: '54.8%' },
-      { project: '转化率', store: '成都天府', value: '53.3%' },
-      { project: '转化率', store: '大连', value: '52.7%' },
-      { project: '转化率', store: '青岛', value: '51.5%' },
-      { project: '转化率', store: '厦门', value: '50.8%' },
-      { project: '转化率', store: '海口', value: '49.2%' },
-    ],
+    rows: buildBorderRankingRows(arrivalStores, 3.2),
   },
 };
 
@@ -632,13 +645,16 @@ function renderBorderRankingTable(rows) {
   const tbody = document.createElement('tbody');
   rows.forEach((row, rowIndex) => {
     const tr = document.createElement('tr');
-    if (rowIndex === 0) {
+    const previousRow = rows[rowIndex - 1];
+    const projectRows = rows.filter((item) => item.project === row.project);
+    const projectRowIndex = projectRows.indexOf(row);
+    if (!previousRow || previousRow.project !== row.project) {
       const projectCell = createCell('td', 'border-project-cell', row.project);
-      projectCell.rowSpan = rows.length;
+      projectCell.rowSpan = projectRows.length;
       tr.appendChild(projectCell);
     }
     tr.append(
-      createCell('td', 'border-rank-cell', `${rowIndex + 1}`),
+      createCell('td', 'border-rank-cell', `${projectRowIndex + 1}`),
       createCell('td', 'border-store-cell', row.store),
       createCell('td', 'border-value-cell', row.value),
     );
