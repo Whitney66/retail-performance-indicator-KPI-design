@@ -6,9 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1852';
+} from './data/report-config.js?v=20260512-1902';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1852';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1902';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -545,16 +545,18 @@ function renderMonthlySummaryTable(rows) {
     const tr = document.createElement('tr');
     const mergeColumns = [
       { key: 'channel', className: 'channel-merged-cell' },
-      { key: 'secondaryChannel', className: 'dimension-merged-cell' },
+      { key: 'secondaryChannel', className: 'dimension-merged-cell', mergeKey: 'secondaryMergeKey' },
       { key: 'store', className: 'dimension-merged-cell' },
     ];
 
-    mergeColumns.forEach(({ key, className }, index) => {
+    mergeColumns.forEach(({ key, className, mergeKey }, index) => {
       const previousRow = rows[rowIndex - 1];
-      const shouldMerge = previousRow && mergeColumns.slice(0, index + 1).every((column) => previousRow[column.key] === row[column.key]);
+      const columnsToMerge = mergeColumns.slice(0, index + 1);
+      const getMergeValue = (item, column) => item[column.mergeKey || column.key];
+      const shouldMerge = previousRow && columnsToMerge.every((column) => getMergeValue(previousRow, column) === getMergeValue(row, column));
       if (shouldMerge) return;
 
-      const rowSpan = rows.filter((item) => mergeColumns.slice(0, index + 1).every((column) => item[column.key] === row[column.key])).length;
+      const rowSpan = rows.filter((item) => columnsToMerge.every((column) => getMergeValue(item, column) === getMergeValue(row, column))).length;
       const td = createCell('td', row.isSecondarySummary && key === 'store' ? `${className} monthly-summary-cell` : className, row[key]);
       td.rowSpan = rowSpan;
       applyStickyOffset(td, index);

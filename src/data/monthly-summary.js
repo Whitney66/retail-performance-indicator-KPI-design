@@ -69,13 +69,15 @@ const monthlyRows = monthlyChannelGroups.flatMap((group) => [
   {
     channel: group.channel,
     secondaryChannel: group.secondaryChannel,
-    store: group.secondaryChannel,
+    store: '',
+    secondaryMergeKey: `${group.secondaryChannel}-summary`,
     isSecondarySummary: true,
   },
   ...group.stores.map((store) => ({
     channel: group.channel,
-    secondaryChannel: group.secondaryChannel,
+    secondaryChannel: '',
     store,
+    secondaryMergeKey: `${group.secondaryChannel}-stores`,
     isSecondarySummary: false,
   })),
 ]);
