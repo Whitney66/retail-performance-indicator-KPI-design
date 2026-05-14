@@ -458,6 +458,10 @@ button {
   min-width: 0;
 }
 
+.nested-switcher {
+  margin-left: 8px;
+}
+
 .tab-pane {
   display: flex;
   flex-direction: column;
@@ -790,6 +794,10 @@ button {
   min-width: 120px;
   vertical-align: middle;
   font-size: 16px !important;
+}
+
+.border-rank-cell {
+  min-width: 90px;
 }
 
 .border-store-cell {

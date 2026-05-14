@@ -6,9 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1915';
+} from './data/report-config.js?v=20260512-1922';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1915';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1922';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -624,7 +624,7 @@ function renderBorderRankingTable(rows) {
   const table = createCell('table', 'border-ranking-table');
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['项目', '门店名称', '指标数据'].forEach((name) => {
+  ['项目', '排名', '门店名称', '指标数据'].forEach((name) => {
     headerRow.appendChild(createCell('th', '', name));
   });
   thead.appendChild(headerRow);
@@ -637,7 +637,11 @@ function renderBorderRankingTable(rows) {
       projectCell.rowSpan = rows.length;
       tr.appendChild(projectCell);
     }
-    tr.append(createCell('td', 'border-store-cell', row.store), createCell('td', 'border-value-cell', row.value));
+    tr.append(
+      createCell('td', 'border-rank-cell', `${rowIndex + 1}`),
+      createCell('td', 'border-store-cell', row.store),
+      createCell('td', 'border-value-cell', row.value),
+    );
     tbody.appendChild(tr);
   });
 
@@ -647,9 +651,9 @@ function renderBorderRankingTable(rows) {
   return tableWrap;
 }
 
-function buildBorderRankingTab() {
+function buildBorderRankingPane() {
   const wrapper = createCell('div', 'tab-pane');
-  const switcher = createCell('div', 'subtab-switcher');
+  const switcher = createCell('div', 'subtab-switcher nested-switcher');
   const content = createCell('div', 'subtab-content');
 
   function mountRanking(type) {
@@ -668,6 +672,38 @@ function buildBorderRankingTab() {
 
   wrapper.append(switcher, content);
   mountRanking('departure');
+  return wrapper;
+}
+
+function buildBorderTab() {
+  const wrapper = createCell('div', 'tab-pane');
+  const switcher = createCell('div', 'subtab-switcher');
+  const content = createCell('div', 'subtab-content');
+  const tabs = [
+    { id: 'ranking', label: '出入境口岸排名' },
+    { id: 'monitor', label: '客源及零售指标监控' },
+  ];
+
+  function mountBorderSubtab(id) {
+    [...switcher.children].forEach((button) => button.classList.toggle('active', button.dataset.id === id));
+    content.innerHTML = '';
+    if (id === 'ranking') {
+      content.appendChild(buildBorderRankingPane());
+      return;
+    }
+    content.appendChild(renderPlaceholderTab(modulePlaceholders.border));
+  }
+
+  tabs.forEach((tab, index) => {
+    const button = createCell('button', index === 0 ? 'subtab-btn active' : 'subtab-btn', tab.label);
+    button.type = 'button';
+    button.dataset.id = tab.id;
+    button.addEventListener('click', () => mountBorderSubtab(tab.id));
+    switcher.appendChild(button);
+  });
+
+  wrapper.append(switcher, content);
+  mountBorderSubtab('ranking');
   return wrapper;
 }
 
@@ -854,12 +890,8 @@ export function renderApp(root) {
       tabContent.appendChild(buildMonthlyTab());
       return;
     }
-    if (id === 'borderRanking') {
-      tabContent.appendChild(buildBorderRankingTab());
-      return;
-    }
-    if (id === 'borderMonitor') {
-      tabContent.appendChild(renderPlaceholderTab(modulePlaceholders.border));
+    if (id === 'border') {
+      tabContent.appendChild(buildBorderTab());
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));
