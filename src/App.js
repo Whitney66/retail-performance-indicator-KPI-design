@@ -138,6 +138,47 @@ function buildBorderMonitorCells(rowIndex, item, columns) {
   });
 }
 
+const cityRetailStores = [
+  '市内店整体合计',
+  '市内店线下合计',
+  '深圳市内店（线下）',
+  '广州市内店（线下）',
+  '西安市内店（线下）',
+  '天津市内店（线下）',
+  '福州市内店（线下）',
+  '厦门市内店（线下）',
+  '大连市内店（线下）',
+  '青岛市内店（线下）',
+  '成都市内店（线下）',
+  '三亚市内店（离境）',
+  '哈尔滨市内店（线下）',
+  '上海市内店（线下）',
+  '北京市内店（线下）',
+  '云仓',
+  '云店',
+  '线上预订',
+];
+
+const cityRetailMetrics = [
+  '进店人数（人次）',
+  '销售收入（万元）',
+  '毛利额（万元）',
+  '购买人数（人次）',
+  '小票数（张）',
+  '销售数量（件）',
+  '转化率',
+  '毛利率',
+  '票单价（元/张）',
+  '客单价（元/人次）',
+  '人均购物额（元/人次）',
+  '连带率',
+  '经营面积（平方米）',
+  '坪效（元/平方米）',
+  '营业人员（人）',
+  '劳效（元/人）',
+  '件单价',
+];
+
 const modulePlaceholders = {
   monthly: {
     title: '月度汇总表',
@@ -741,20 +782,23 @@ function renderBorderRankingTable(rows) {
   return tableWrap;
 }
 
+function buildYearComparisonColumns(reportYear = monitorReportYear, currentMonth = getCurrentMonth()) {
+  const currentYearMonths = buildMonthColumns(currentMonth);
+  const fullYearMonths = buildMonthColumns(12);
+  return [
+    ...currentYearMonths.map((label) => ({ group: `${reportYear}年`, label, type: 'current' })),
+    { group: `${reportYear}年`, label: '合计', type: 'current' },
+    ...fullYearMonths.map((label) => ({ group: `${reportYear - 1}年`, label, type: 'lastYear' })),
+    { group: `${reportYear - 1}年`, label: '合计', type: 'lastYear' },
+    ...fullYearMonths.map((label) => ({ group: `同比${reportYear - 1}年`, label, type: 'yoy' })),
+    { group: `同比${reportYear - 1}年`, label: '合计', type: 'yoy' },
+  ];
+}
+
 function renderBorderMonitorTable(type = 'departure') {
   const metrics = buildBorderMonitorMetrics(type);
   const storeLabel = borderMonitorStoreGroups[type]?.label || borderMonitorStoreGroups.departure.label;
-  const currentMonth = getCurrentMonth();
-  const currentYearMonths = buildMonthColumns(currentMonth);
-  const fullYearMonths = buildMonthColumns(12);
-  const dataColumns = [
-    ...currentYearMonths.map((label) => ({ group: `${monitorReportYear}年`, label, type: 'current' })),
-    { group: `${monitorReportYear}年`, label: '合计', type: 'current' },
-    ...fullYearMonths.map((label) => ({ group: `${monitorComparisonYear}年`, label, type: 'lastYear' })),
-    { group: `${monitorComparisonYear}年`, label: '合计', type: 'lastYear' },
-    ...fullYearMonths.map((label) => ({ group: `同比${monitorComparisonYear}年`, label, type: 'yoy' })),
-    { group: `同比${monitorComparisonYear}年`, label: '合计', type: 'yoy' },
-  ];
+  const dataColumns = buildYearComparisonColumns();
   const tableWrap = createCell('div', 'table-card border-monitor-card');
   const scroll = createCell('div', 'table-scroll');
   const table = createCell('table', 'border-monitor-table');
@@ -798,6 +842,60 @@ function renderBorderMonitorTable(type = 'departure') {
   scroll.appendChild(table);
   tableWrap.appendChild(scroll);
   return tableWrap;
+}
+
+function renderCityRetailTable() {
+  const dataColumns = buildYearComparisonColumns();
+  const tableWrap = createCell('div', 'table-card city-retail-card');
+  const scroll = createCell('div', 'table-scroll');
+  const table = createCell('table', 'city-retail-table');
+  const thead = document.createElement('thead');
+  const groupRow = document.createElement('tr');
+  const monthRow = document.createElement('tr');
+
+  ['市内店', '项目'].forEach((name) => {
+    const th = createCell('th', 'city-sticky-head', name);
+    th.rowSpan = 2;
+    groupRow.appendChild(th);
+  });
+  [`${monitorReportYear}年`, `${monitorComparisonYear}年`, `同比${monitorComparisonYear}年`].forEach((name) => {
+    const th = createCell('th', 'city-year-head', name);
+    th.colSpan = dataColumns.filter((column) => column.group === name).length;
+    groupRow.appendChild(th);
+  });
+  dataColumns.forEach((column) => {
+    monthRow.appendChild(createCell('th', column.label === '合计' ? 'city-total-head' : 'city-month-head', column.label));
+  });
+  thead.append(groupRow, monthRow);
+
+  const tbody = document.createElement('tbody');
+  cityRetailStores.forEach((store, storeIndex) => {
+    cityRetailMetrics.forEach((metric, metricIndex) => {
+      const tr = document.createElement('tr');
+      if (metricIndex === 0) {
+        const storeCell = createCell('td', storeIndex < 2 ? 'city-store-cell city-summary-store-cell' : 'city-store-cell', store);
+        storeCell.rowSpan = cityRetailMetrics.length;
+        tr.appendChild(storeCell);
+      }
+      tr.appendChild(createCell('td', 'city-metric-cell', metric));
+      buildBorderMonitorCells(storeIndex * cityRetailMetrics.length + metricIndex, metric, dataColumns).forEach((cell, cellIndex) => {
+        const column = dataColumns[cellIndex];
+        tr.appendChild(createCell('td', column.label === '合计' ? 'city-total-cell' : '', cell));
+      });
+      tbody.appendChild(tr);
+    });
+  });
+
+  table.append(thead, tbody);
+  scroll.appendChild(table);
+  tableWrap.appendChild(scroll);
+  return tableWrap;
+}
+
+function buildCityTab() {
+  const wrapper = createCell('div', 'tab-pane');
+  wrapper.appendChild(renderCityRetailTable());
+  return wrapper;
 }
 
 function buildBorderRankingPane() {
@@ -1068,6 +1166,10 @@ export function renderApp(root) {
     }
     if (id === 'border') {
       tabContent.appendChild(buildBorderTab());
+      return;
+    }
+    if (id === 'city') {
+      tabContent.appendChild(buildCityTab());
       return;
     }
     tabContent.appendChild(renderPlaceholderTab(modulePlaceholders[id] || modulePlaceholders.monthly));
