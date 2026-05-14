@@ -6,8 +6,8 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1815';
-import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1815';
+} from './data/report-config.js?v=20260512-1825';
+import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -427,9 +427,11 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
     const targetGroup = createCell('th', 'metric-group total-group', '月度目标');
     targetGroup.colSpan = dynamicMetricHeaders.length;
     groupRow.appendChild(targetGroup);
-    const dailyGroup = createCell('th', 'metric-group detail-group', '日报');
-    dailyGroup.colSpan = detailColumns.length;
-    groupRow.appendChild(dailyGroup);
+    detailPeriods.forEach((periodColumns) => {
+      const th = createCell('th', 'detail-period-head', periodColumns[0].groupLabel);
+      th.colSpan = periodColumns.length;
+      groupRow.appendChild(th);
+    });
     const monthGroup = createCell('th', 'metric-group total-group', '月报');
     monthGroup.colSpan = monthReportColumns.length;
     groupRow.appendChild(monthGroup);
@@ -438,7 +440,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
       metricRow.appendChild(createCell('th', 'total-head', name));
     });
     detailColumns.forEach((column) => {
-      metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), `${column.groupLabel}${column.label}`));
+      metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
     });
     monthReportColumns.forEach((column) => {
       metricRow.appendChild(createCell('th', getDetailHeadClass(column.type), column.label));
