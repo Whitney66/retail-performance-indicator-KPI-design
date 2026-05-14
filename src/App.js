@@ -6,9 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1934';
+} from './data/report-config.js?v=20260512-1939';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1934';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1939';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -637,7 +637,7 @@ function renderBorderRankingTable(rows) {
   const table = createCell('table', 'border-ranking-table');
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['项目', '排名', '门店名称', '指标数据'].forEach((name) => {
+  ['序号', '项目', '排名', '门店名称', '指标数据'].forEach((name) => {
     headerRow.appendChild(createCell('th', '', name));
   });
   thead.appendChild(headerRow);
@@ -649,6 +649,10 @@ function renderBorderRankingTable(rows) {
     const projectRows = rows.filter((item) => item.project === row.project);
     const projectRowIndex = projectRows.indexOf(row);
     if (!previousRow || previousRow.project !== row.project) {
+      const projectIndex = borderRankingProjects.findIndex((project) => project.name === row.project) + 1;
+      const indexCell = createCell('td', 'border-project-index-cell', `${projectIndex}`);
+      indexCell.rowSpan = projectRows.length;
+      tr.appendChild(indexCell);
       const projectCell = createCell('td', 'border-project-cell', row.project);
       projectCell.rowSpan = projectRows.length;
       tr.appendChild(projectCell);

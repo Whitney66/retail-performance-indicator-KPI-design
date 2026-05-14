@@ -795,6 +795,12 @@ button {
   border-top: 1px solid #2d333f;
 }
 
+.border-project-index-cell {
+  min-width: 70px;
+  vertical-align: middle;
+  font-size: 16px !important;
+}
+
 .border-project-cell {
   min-width: 120px;
   vertical-align: middle;
