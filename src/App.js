@@ -6,9 +6,9 @@ import {
   secondaryChannelOptions,
   storeOptions,
   metricHeaders,
-} from './data/report-config.js?v=20260512-1939';
+} from './data/report-config.js?v=20260512-1948';
 import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
-import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1939';
+import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1948';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
 
@@ -67,6 +67,56 @@ const borderRankingData = {
     rows: buildBorderRankingRows(arrivalStores, 3.2),
   },
 };
+
+const borderMonitorMetrics = [
+  { section: '主要口岸出境合计', item: '客流人数（人次）', highlight: true },
+  { section: '主要口岸出境合计', item: '出境收入（万元）', highlight: true },
+  { section: '主要口岸出境合计', item: '毛利额（万元）' },
+  { section: '主要口岸出境合计', item: '购买人数（人次）' },
+  { section: '主要口岸出境合计', item: '小票数（张）' },
+  { section: '主要口岸出境合计', item: '销售数量（件）' },
+  { section: '主要口岸出境合计', item: '转化率' },
+  { section: '主要口岸出境合计', item: '毛利率' },
+  { section: '主要口岸出境合计', item: '票单价（元/张）' },
+  { section: '主要口岸出境合计', item: '客单价（元/人次）' },
+  { section: '主要口岸出境合计', item: '人均购物额（元/人次）' },
+  { section: '主要口岸出境合计', item: '连带率' },
+  { section: '主要口岸出境合计', item: '经营面积（平方米）', highlight: true },
+  { section: '主要口岸出境合计', item: '坪效（元/平方米）' },
+  { section: '主要口岸出境合计', item: '营业人员（人）', highlight: true },
+  { section: '主要口岸出境合计', item: '劳效（元/人）' },
+  { section: '北京大兴', item: '客流人数（人次）' },
+  { section: '北京大兴', item: '出境收入（万元）' },
+  { section: '北京大兴', item: '毛利额（万元）' },
+  { section: '北京大兴', item: '购买人数（人次）' },
+  { section: '北京大兴', item: '转化率' },
+  { section: '北京大兴', item: '客单价（元/人次）' },
+];
+
+function getCurrentMonth() {
+  return new Date().getMonth() + 1;
+}
+
+function buildMonthColumns(maxMonth = 12) {
+  return Array.from({ length: maxMonth }, (_, index) => `${index + 1}月`);
+}
+
+function formatBorderMonitorCell(seed, item, type) {
+  if (type === 'yoy') return `${((seed % 35) - 8).toFixed(1)}%`;
+  if (item.includes('率')) return `${(seed % 42 + 46).toFixed(1)}%`;
+  if (item.includes('人员') || item.includes('人数') || item.includes('小票') || item.includes('数量')) return `${Math.round(seed * 42).toLocaleString('zh-CN')}`;
+  if (item.includes('面积')) return `${Math.round(seed * 9).toLocaleString('zh-CN')}`;
+  if (item.includes('单价') || item.includes('购物额') || item.includes('坪效') || item.includes('劳效')) return `${Math.round(seed * 18).toLocaleString('zh-CN')}`;
+  return `${(seed / 2.6).toFixed(2)}`;
+}
+
+function buildBorderMonitorCells(rowIndex, item, columns) {
+  return columns.map((column, columnIndex) => {
+    if (column.label === '合计' && column.type === 'yoy') return `${((rowIndex * 3) % 28 - 6).toFixed(1)}%`;
+    const seed = 24 + rowIndex * 5 + columnIndex * 2;
+    return formatBorderMonitorCell(seed, item, column.type);
+  });
+}
 
 const modulePlaceholders = {
   monthly: {
@@ -671,6 +721,64 @@ function renderBorderRankingTable(rows) {
   return tableWrap;
 }
 
+function renderBorderMonitorTable() {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = getCurrentMonth();
+  const currentYearMonths = buildMonthColumns(currentMonth);
+  const fullYearMonths = buildMonthColumns(12);
+  const dataColumns = [
+    ...currentYearMonths.map((label) => ({ group: `${currentYear}年`, label, type: 'current' })),
+    { group: `${currentYear}年`, label: '合计', type: 'current' },
+    ...fullYearMonths.map((label) => ({ group: `${currentYear - 1}年`, label, type: 'lastYear' })),
+    { group: `${currentYear - 1}年`, label: '合计', type: 'lastYear' },
+    ...fullYearMonths.map((label) => ({ group: `同比${currentYear - 1}年`, label, type: 'yoy' })),
+    { group: `同比${currentYear - 1}年`, label: '合计', type: 'yoy' },
+  ];
+  const tableWrap = createCell('div', 'table-card border-monitor-card');
+  const scroll = createCell('div', 'table-scroll');
+  const table = createCell('table', 'border-monitor-table');
+  const thead = document.createElement('thead');
+  const groupRow = document.createElement('tr');
+  const monthRow = document.createElement('tr');
+
+  ['出境门店', '项目'].forEach((name) => {
+    const th = createCell('th', 'monitor-sticky-head', name);
+    th.rowSpan = 2;
+    groupRow.appendChild(th);
+  });
+  [`${currentYear}年`, `${currentYear - 1}年`, `同比${currentYear - 1}年`].forEach((name) => {
+    const th = createCell('th', 'monitor-year-head', name);
+    th.colSpan = dataColumns.filter((column) => column.group === name).length;
+    groupRow.appendChild(th);
+  });
+  dataColumns.forEach((column) => {
+    monthRow.appendChild(createCell('th', column.label === '合计' ? 'monitor-total-head' : 'monitor-month-head', column.label));
+  });
+  thead.append(groupRow, monthRow);
+
+  const tbody = document.createElement('tbody');
+  borderMonitorMetrics.forEach((row, rowIndex) => {
+    const tr = document.createElement('tr');
+    const previousRow = borderMonitorMetrics[rowIndex - 1];
+    if (!previousRow || previousRow.section !== row.section) {
+      const sectionCell = createCell('td', 'monitor-section-cell', row.section);
+      sectionCell.rowSpan = borderMonitorMetrics.filter((item) => item.section === row.section).length;
+      tr.appendChild(sectionCell);
+    }
+    tr.appendChild(createCell('td', row.highlight ? 'monitor-item-cell monitor-highlight-cell' : 'monitor-item-cell', row.item));
+    buildBorderMonitorCells(rowIndex, row.item, dataColumns).forEach((cell, cellIndex) => {
+      const column = dataColumns[cellIndex];
+      tr.appendChild(createCell('td', column.label === '合计' ? 'monitor-total-cell' : '', cell));
+    });
+    tbody.appendChild(tr);
+  });
+
+  table.append(thead, tbody);
+  scroll.appendChild(table);
+  tableWrap.appendChild(scroll);
+  return tableWrap;
+}
+
 function buildBorderRankingPane() {
   const wrapper = createCell('div', 'tab-pane');
   const switcher = createCell('div', 'subtab-switcher nested-switcher border-store-switcher');
@@ -711,7 +819,7 @@ function buildBorderTab() {
       content.appendChild(buildBorderRankingPane());
       return;
     }
-    content.appendChild(renderPlaceholderTab(modulePlaceholders.border));
+    content.appendChild(renderBorderMonitorTable());
   }
 
   tabs.forEach((tab, index) => {

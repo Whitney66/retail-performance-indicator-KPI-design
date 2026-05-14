@@ -819,6 +819,63 @@ button {
   min-width: 160px;
 }
 
+.border-monitor-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 5200px;
+  width: 100%;
+}
+
+.border-monitor-table th,
+.border-monitor-table td {
+  border-right: 1px solid #2d333f;
+  border-bottom: 1px solid #2d333f;
+  padding: 4px 10px;
+  height: 27px;
+  text-align: center;
+  font-size: 14px;
+  white-space: nowrap;
+  background: #fff;
+}
+
+.border-monitor-table th:first-child,
+.border-monitor-table td:first-child {
+  border-left: 1px solid #2d333f;
+}
+
+.border-monitor-table thead tr:first-child th {
+  border-top: 1px solid #2d333f;
+}
+
+.monitor-sticky-head,
+.monitor-year-head,
+.monitor-month-head {
+  background: #f2f2f2 !important;
+  font-weight: 700;
+}
+
+.monitor-total-head,
+.monitor-total-cell {
+  background: #e3f2d9 !important;
+}
+
+.monitor-section-cell {
+  min-width: 120px;
+  background: #eef0f4 !important;
+  vertical-align: middle;
+  font-weight: 700;
+}
+
+.monitor-item-cell {
+  min-width: 230px;
+  background: #f7f7f7 !important;
+  font-weight: 700;
+}
+
+.monitor-highlight-cell {
+  background: #ffff00 !important;
+}
+
 .placeholder-card {
   min-height: 440px;
 }
