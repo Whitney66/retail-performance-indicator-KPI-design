@@ -112,9 +112,9 @@ function normalizeStoreLabel(value) {
 
 function getSelectedHainanStores(selectedStores = []) {
   const normalized = selectedStores.map(normalizeStoreLabel).filter(Boolean);
-  if (!normalized.length || normalized.includes('全部')) return [...hainanStores];
-  const matched = hainanStores.filter((store) => normalized.includes(store));
-  return matched.length ? matched : [...hainanStores];
+  if (!normalized.length) return [];
+  if (normalized.includes('全部')) return [...hainanStores];
+  return hainanStores.filter((store) => normalized.includes(store));
 }
 
 function parseMetricValue(value) {
@@ -157,4 +157,4 @@ export function buildOfflineRetailRows(selectedStores = []) {
   return [...summaryRows, ...resolvedSummaryRows, ...selectedStoreRows];
 }
 
-export const offlineRetailRows = buildOfflineRetailRows();
+export const offlineRetailRows = buildOfflineRetailRows(hainanStores);

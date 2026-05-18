@@ -7,7 +7,7 @@ import {
   storeOptions,
   metricHeaders,
 } from './data/report-config.js?v=20260512-1948';
-import { buildOfflineRetailRows } from './data/offline-retail.js?v=20260515-0100';
+import { buildOfflineRetailRows } from './data/offline-retail.js?v=20260515-0120';
 import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1948';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
@@ -472,8 +472,9 @@ function createDropdownMultiSelect(label, options) {
   const selectAllBtn = createCell('button', 'multi-select-tool', '全选');
   const clearBtn = createCell('button', 'multi-select-tool', '清空');
   const optionList = createCell('div', 'multi-select-options');
+  const actualOptions = options.filter((option) => option !== '全部');
 
-  let selected = new Set([options[0] || '全部']);
+  let selected = new Set(actualOptions);
 
   trigger.type = 'button';
   trigger.setAttribute('aria-expanded', 'false');
@@ -484,8 +485,13 @@ function createDropdownMultiSelect(label, options) {
     return [...selected];
   }
 
+  function isAllSelected() {
+    return actualOptions.length > 0 && actualOptions.every((option) => selected.has(option));
+  }
+
   function getSummary() {
-    if (!selected.size || selected.has('全部')) return '全部';
+    if (!selected.size) return '未选择';
+    if (isAllSelected()) return '全部';
     const labels = getSelected();
     return labels.length <= 2 ? labels.join('、') : `已选${labels.length}项`;
   }
@@ -500,15 +506,15 @@ function createDropdownMultiSelect(label, options) {
   }
 
   function normalize(nextSelected, sourceValue) {
+    if (sourceValue === '全部') {
+      selected = isAllSelected() ? new Set() : new Set(actualOptions);
+      return;
+    }
     if (!nextSelected.size) {
-      selected = new Set(['全部']);
+      selected = new Set();
       return;
     }
-    if (sourceValue === '全部' && nextSelected.has('全部')) {
-      selected = new Set(['全部']);
-      return;
-    }
-    if (nextSelected.size > 1 && nextSelected.has('全部')) {
+    if (nextSelected.has('全部') && nextSelected.size > 1) {
       nextSelected.delete('全部');
     }
     selected = nextSelected.size ? nextSelected : new Set(['全部']);
@@ -516,7 +522,16 @@ function createDropdownMultiSelect(label, options) {
 
   function renderOptions() {
     optionList.innerHTML = '';
-    options.forEach((option) => {
+    const allButton = createCell('label', 'multi-select-option');
+    const allCheckbox = createCell('input', '');
+    const allText = createCell('span', '', '全部');
+    allCheckbox.type = 'checkbox';
+    allCheckbox.value = '全部';
+    allCheckbox.checked = isAllSelected();
+    allButton.append(allCheckbox, allText);
+    optionList.appendChild(allButton);
+
+    actualOptions.forEach((option) => {
       const optionLabel = createCell('label', 'multi-select-option');
       const checkbox = createCell('input', '');
       const text = createCell('span', '', option);
@@ -536,7 +551,7 @@ function createDropdownMultiSelect(label, options) {
   }
 
   function reset() {
-    selected = new Set([options[0] || '全部']);
+    selected = new Set(actualOptions);
     renderOptions();
     updateTrigger();
     setOpen(false);
@@ -562,11 +577,11 @@ function createDropdownMultiSelect(label, options) {
   });
 
   selectAllBtn.addEventListener('click', () => {
-    applySelection(new Set(options.filter((option) => option !== '全部')), '');
+    applySelection(isAllSelected() ? new Set(['全部']) : new Set(actualOptions), '全部');
   });
 
   clearBtn.addEventListener('click', () => {
-    applySelection(new Set(['全部']), '全部');
+    applySelection(new Set(), '');
   });
 
   window.addEventListener('prototype-multiselect-open', (event) => {
