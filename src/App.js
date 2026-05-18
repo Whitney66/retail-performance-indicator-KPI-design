@@ -7,7 +7,7 @@ import {
   storeOptions,
   metricHeaders,
 } from './data/report-config.js?v=20260512-1948';
-import { offlineRetailRows } from './data/offline-retail.js?v=20260512-1825';
+import { offlineRetailRows } from './data/offline-retail.js?v=20260515-0060';
 import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1948';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
@@ -705,8 +705,7 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
       if (shouldMerge) return;
 
       const rowSpan = rows.filter((item) => mergeColumns.slice(0, index + 1).every((column) => item[column.key] === row[column.key])).length;
-      const cellText = options.blankDuplicateSecondaryStore && key === 'store' && row.store === row.secondaryChannel ? '' : row[key];
-      const td = createCell('td', className, cellText);
+      const td = createCell('td', className, row[key]);
       td.rowSpan = rowSpan;
       applyStickyOffset(td, index);
       tr.appendChild(td);
@@ -1216,7 +1215,6 @@ function buildOfflineTab(budgetHeader, detailPeriods, dimension) {
       budgetHeader,
       detailPeriods,
       dimension,
-      blankDuplicateSecondaryStore: true,
     }),
   );
   return wrapper;

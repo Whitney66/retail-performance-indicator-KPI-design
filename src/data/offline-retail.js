@@ -68,12 +68,12 @@ const rowGroups = [
   {
     channel: '海南区域',
     secondaryChannel: '海南区域小计',
-    store: '海南区域小计',
+    store: '',
     rows: hainanSummaryRows,
   },
   ...hainanStores.map((store) => ({
     channel: '海南区域',
-    secondaryChannel: '海南区域小计',
+    secondaryChannel: '',
     store,
     rows: hainanRows,
   })),
