@@ -705,7 +705,8 @@ function renderReportTable(rows, title, subtitle, unitText, tableClassName = '',
       if (shouldMerge) return;
 
       const rowSpan = rows.filter((item) => mergeColumns.slice(0, index + 1).every((column) => item[column.key] === row[column.key])).length;
-      const td = createCell('td', className, row[key]);
+      const cellText = options.blankDuplicateSecondaryStore && key === 'store' && row.store === row.secondaryChannel ? '' : row[key];
+      const td = createCell('td', className, cellText);
       td.rowSpan = rowSpan;
       applyStickyOffset(td, index);
       tr.appendChild(td);
@@ -1215,6 +1216,7 @@ function buildOfflineTab(budgetHeader, detailPeriods, dimension) {
       budgetHeader,
       detailPeriods,
       dimension,
+      blankDuplicateSecondaryStore: true,
     }),
   );
   return wrapper;
