@@ -101,6 +101,11 @@ function buildMetricCells(seed) {
   });
 }
 
+const offlineRetailBaseRows = offlineRows.map((row, index) => ({
+  ...row,
+  metrics: buildMetricCells(36 + index * 5),
+}));
+
 function normalizeStoreLabel(value) {
   return String(value).replace(/^\[\d+\]\s*/, '').trim();
 }
@@ -134,9 +139,9 @@ function aggregateMetricCells(rows) {
 export function buildOfflineRetailRows(selectedStores = []) {
   const selectedStoreNames = getSelectedHainanStores(selectedStores);
   const selectedStoreSet = new Set(selectedStoreNames);
-  const summaryRows = offlineRows.filter((row) => row.channel !== '海南区域');
-  const hainanSummaryTemplates = offlineRows.filter((row) => row.channel === '海南区域' && row.secondaryChannel === '海南区域小计');
-  const selectedStoreRows = offlineRows.filter((row) => row.channel === '海南区域' && row.store && selectedStoreSet.has(row.store));
+  const summaryRows = offlineRetailBaseRows.filter((row) => row.channel !== '海南区域');
+  const hainanSummaryTemplates = offlineRetailBaseRows.filter((row) => row.channel === '海南区域' && row.secondaryChannel === '海南区域小计');
+  const selectedStoreRows = offlineRetailBaseRows.filter((row) => row.channel === '海南区域' && row.store && selectedStoreSet.has(row.store));
   const rowsByIndicator = new Map();
 
   selectedStoreRows.forEach((row) => {

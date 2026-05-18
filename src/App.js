@@ -7,7 +7,7 @@ import {
   storeOptions,
   metricHeaders,
 } from './data/report-config.js?v=20260512-1948';
-import { buildOfflineRetailRows } from './data/offline-retail.js?v=20260515-0090';
+import { buildOfflineRetailRows } from './data/offline-retail.js?v=20260515-0100';
 import { monthlyMetricGroups, monthlySummaryRows } from './data/monthly-summary.js?v=20260512-1948';
 
 const stickyLeftOffsets = ['0px', '160px', '300px', '480px', '600px'];
