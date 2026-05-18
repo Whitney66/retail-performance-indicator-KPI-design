@@ -101,7 +101,55 @@ function buildMetricCells(seed) {
   });
 }
 
-export const offlineRetailRows = offlineRows.map((row, index) => ({
-  ...row,
-  metrics: buildMetricCells(36 + index * 5),
-}));
+function normalizeStoreLabel(value) {
+  return String(value).replace(/^\[\d+\]\s*/, '').trim();
+}
+
+function getSelectedHainanStores(selectedStores = []) {
+  const normalized = selectedStores.map(normalizeStoreLabel).filter(Boolean);
+  if (!normalized.length || normalized.includes('全部')) return [...hainanStores];
+  const matched = hainanStores.filter((store) => normalized.includes(store));
+  return matched.length ? matched : [...hainanStores];
+}
+
+function parseMetricValue(value) {
+  const numeric = Number(String(value).replace(/,/g, '').replace(/%/g, ''));
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+const aggregatePercentIndexes = new Set([2, 4, 7, 9]);
+
+function aggregateMetricCells(rows) {
+  return metricHeaders.map((_, index) => {
+    const values = rows.map((row) => parseMetricValue(row.metrics[index])).filter((value) => value !== null);
+    if (!values.length) return '--';
+    const total = values.reduce((sum, value) => sum + value, 0);
+    if (aggregatePercentIndexes.has(index)) {
+      return `${(total / values.length).toFixed(1)}%`;
+    }
+    return `${total.toFixed(2)}`;
+  });
+}
+
+export function buildOfflineRetailRows(selectedStores = []) {
+  const selectedStoreNames = getSelectedHainanStores(selectedStores);
+  const selectedStoreSet = new Set(selectedStoreNames);
+  const summaryRows = offlineRows.filter((row) => row.channel !== '海南区域');
+  const hainanSummaryTemplates = offlineRows.filter((row) => row.channel === '海南区域' && row.secondaryChannel === '海南区域小计');
+  const selectedStoreRows = offlineRows.filter((row) => row.channel === '海南区域' && row.store && selectedStoreSet.has(row.store));
+  const rowsByIndicator = new Map();
+
+  selectedStoreRows.forEach((row) => {
+    if (!rowsByIndicator.has(row.indicator)) rowsByIndicator.set(row.indicator, []);
+    rowsByIndicator.get(row.indicator).push(row);
+  });
+
+  const resolvedSummaryRows = hainanSummaryTemplates.map((template) => ({
+    ...template,
+    metrics: aggregateMetricCells(rowsByIndicator.get(template.indicator) || []),
+  }));
+
+  return [...summaryRows, ...resolvedSummaryRows, ...selectedStoreRows];
+}
+
+export const offlineRetailRows = buildOfflineRetailRows();
